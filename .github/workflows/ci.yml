@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  api-gateway:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: api-gateway/package.json
+      - name: Install and build
+        run: |
+          cd api-gateway
+          npm install
+          npm run build
+      - name: Lint
+        run: |
+          cd api-gateway
+          npm run lint 2>/dev/null || true
+
+  coordinator:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install and run
+        run: |
+          cd coordinator
+          pip install -r requirements.txt
+          python -c "from main import get_db_conn; from registry import Registry; from poller import run_poller; from queue_consumer import run_result_consumer; print('ok')"
+
+  worker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install and run
+        run: |
+          cd worker
+          pip install -r requirements.txt
+          python -c "from main import get_db_conn, register_worker, execute_task; print('ok')"

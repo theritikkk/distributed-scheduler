@@ -1,0 +1,15 @@
+node_modules/
+dist/
+*.log
+.env
+.env.local
+*.pb.go
+coverage.out
+.DS_Store
+.idea/
+.vscode/
+__pycache__/
+*.pyc
+*.egg-info/
+.venv/
+venv/

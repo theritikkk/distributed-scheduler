@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+package scheduler;
+
+option go_package = "github.com/distributed-scheduler/proto/scheduler;scheduler";
+
+service Scheduler {
+  rpc RegisterWorker(RegisterWorkerRequest) returns (RegisterWorkerResponse);
+  rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
+  rpc RequestTask(RequestTaskRequest) returns (TaskAssignment);
+  rpc ReportResult(ReportResultRequest) returns (ReportResultResponse);
+  rpc StreamTasks(StreamTasksRequest) returns (stream TaskAssignment);
+}
+
+message RegisterWorkerRequest {
+  string worker_id = 1;
+  string worker_address = 2;
+}
+
+message RegisterWorkerResponse {
+  bool accepted = 1;
+  string message = 2;
+}
+
+message HeartbeatRequest {
+  string worker_id = 1;
+  string status = 2;
+  int32 active_tasks = 3;
+}
+
+message HeartbeatResponse {
+  bool ok = 1;
+}
+
+message RequestTaskRequest {
+  string worker_id = 1;
+}
+
+message TaskAssignment {
+  string task_id = 1;
+  string task_name = 2;
+  string payload_json = 3;
+  string schedule_type = 4;
+  bool has_task = 5;
+}
+
+message ReportResultRequest {
+  string worker_id = 1;
+  string task_id = 2;
+  string execution_id = 3;
+  string status = 4;
+  string output = 5;
+  string error_message = 6;
+}
+
+message ReportResultResponse {
+  bool ok = 1;
+}
+
+message StreamTasksRequest {
+  string worker_id = 1;
+}
