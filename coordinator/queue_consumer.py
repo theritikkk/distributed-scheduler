@@ -94,3 +94,7 @@ def run_result_consumer( get_db_conn, rabbit_url: str ):
     logger.info( "consuming results from %s", RESULT_QUEUE )
     
     channel.start_consuming()
+
+
+def on_message(ch, method, _properties, body):
+    print( " RECEIVED MESSAGE : ", body )
