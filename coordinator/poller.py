@@ -55,6 +55,7 @@ def run_poller( get_db_conn, rabbit_url: str, poll_interval_sec = 5 ):
                         """
                     )
                     rows = cur.fetchall()
+                    logger.info(f"Found {len(rows)} due tasks")
                 # Build list of (task_id, execution_id, task_name, payload_str, schedule_type) in one transaction
                 
                 to_publish = []
@@ -65,6 +66,8 @@ def run_poller( get_db_conn, rabbit_url: str, poll_interval_sec = 5 ):
                     
                     payload_str = json.dumps( command_payload ) if isinstance( command_payload, dict ) else ( command_payload or "{}" )
                     
+                    logger.info(f"Processing task {row[0]}")
+
                     if isinstance( payload_str, bytes ):
                         payload_str = payload_str.decode( "utf-8" )
                     with conn.cursor() as cur:
@@ -101,6 +104,8 @@ def run_poller( get_db_conn, rabbit_url: str, poll_interval_sec = 5 ):
                         "payload": payload_str,
                         "scheduleType": schedule_type,
                     })
+
+                    logger.info(f"Publishing task {task_id} to queue")
 
                     try:
                         channel.basic_publish(
