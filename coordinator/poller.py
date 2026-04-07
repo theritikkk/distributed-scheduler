@@ -93,7 +93,7 @@ def run_poller( get_db_conn, rabbit_url: str, poll_interval_sec = 5 ):
 
                         to_publish.append((str(task_id), str(execution_id), task_name, payload_str, schedule_type))
                 
-                conn.commit()
+
 
                 for task_id, execution_id, task_name, payload_str, schedule_type in to_publish:
                 

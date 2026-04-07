@@ -23,7 +23,9 @@ RABBITMQ_URL = os.environ.get( "RABBITMQ_URL", "amqp://scheduler:scheduler_secre
 
 
 def get_db_conn():
-    return psycopg2.connect( DATABASE_URL )
+    conn = psycopg2.connect( DATABASE_URL )
+    conn.autocommit = True
+    return conn 
 
 
 def main():
