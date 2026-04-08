@@ -47,6 +47,6 @@ app.use( '/api/v1/tasks', tasksRouter );
 
 app.use( errorHandler );
 
-app.listen( PORT, () => {
+app.listen( 3000, '0.0.0.0', () => {
   console.log( `API Gateway listening on port ${PORT}` );
 });
