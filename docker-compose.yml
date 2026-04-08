@@ -38,12 +38,14 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
+    env_file:
+      - .env
     environment:
       NODE_ENV: development
       PORT: 3000
-      DATABASE_URL: postgresql://scheduler:scheduler_secret@postgres:5432/distributed_scheduler
+      # DATABASE_URL: postgresql://scheduler:scheduler_secret@postgres:5432/distributed_scheduler
       JWT_SECRET: your-super-secret-jwt-key-change-in-production
-      RABBITMQ_URL: amqp://scheduler:scheduler_secret@rabbitmq:5672
+      # RABBITMQ_URL: amqp://scheduler:scheduler_secret@rabbitmq:5672
     depends_on:
       postgres:
         condition: service_healthy
@@ -56,9 +58,9 @@ services:
       dockerfile: Dockerfile
     env_file: 
       - .env
-    environment:
-      DATABASE_URL: postgresql://scheduler:scheduler_secret@postgres:5432/distributed_scheduler
-      RABBITMQ_URL: amqp://scheduler:scheduler_secret@rabbitmq:5672
+    # environment:
+      # DATABASE_URL: postgresql://scheduler:scheduler_secret@postgres:5432/distributed_scheduler
+      # RABBITMQ_URL: amqp://scheduler:scheduler_secret@rabbitmq:5672
     depends_on:
       postgres:
         condition: service_healthy
@@ -69,9 +71,11 @@ services:
     build:
       context: ./worker
       dockerfile: Dockerfile
+    env_file:
+      - .env
     environment:
-      DATABASE_URL: postgresql://scheduler:scheduler_secret@postgres:5432/distributed_scheduler
-      RABBITMQ_URL: amqp://scheduler:scheduler_secret@rabbitmq:5672
+      # DATABASE_URL: postgresql://scheduler:scheduler_secret@postgres:5432/distributed_scheduler
+      # RABBITMQ_URL: amqp://scheduler:scheduler_secret@rabbitmq:5672
       WORKER_ID: worker-1
     depends_on:
       postgres:
