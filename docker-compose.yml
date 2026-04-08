@@ -54,6 +54,8 @@ services:
     build:
       context: ./coordinator
       dockerfile: Dockerfile
+    env_file: 
+      - .env
     environment:
       DATABASE_URL: postgresql://scheduler:scheduler_secret@postgres:5432/distributed_scheduler
       RABBITMQ_URL: amqp://scheduler:scheduler_secret@rabbitmq:5672
