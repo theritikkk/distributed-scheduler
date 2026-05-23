@@ -3,7 +3,7 @@ import { body, param, query, validationResult } from 'express-validator';
 import { pool } from '../db';
 import { AppError } from '../middleware/errorHandler';
 import { authenticate, AuthRequest } from '../middleware/auth';
-import { publishTask } from '../queue';
+import { publishScheduleWakeup } from '../queue';
 
 export const tasksRouter = Router();
 tasksRouter.use( authenticate );
@@ -74,7 +74,7 @@ tasksRouter.post(
 
       const task = result.rows[ 0 ];
 
-      await publishTask( task.id );
+      await publishScheduleWakeup( task.id, task.next_execution_time );
 
       res.status( 201 ).json( task );
 
@@ -256,7 +256,7 @@ tasksRouter.put(
       }
 
       if( result.rows[0].status === 'scheduled' ) {
-        await publishTask( taskId );
+        await publishScheduleWakeup( taskId, result.rows[0].next_execution_time );
       }
 
       res.json( result.rows[0] );

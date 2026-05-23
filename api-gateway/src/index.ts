@@ -17,9 +17,11 @@ connectQueue().catch(
 );
 
 app.use( helmet() );
+
 app.use( cors(
   { origin: process.env.CORS_ORIGIN || '*' }
 ));
+
 app.use( express.json(
   { limit: '10kb' }
 ));
@@ -31,22 +33,29 @@ const limiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
 app.use( '/api/', limiter );
 
 app.use( requestLogger );
+
 registerMetricsEndpoint( app );
 
 app.get( '/health', (_, res) => 
+  
   res.json(
     { status: 'ok', service: 'api-gateway' }
   )
+
 );
 
 app.use( '/api/v1/auth', authRouter );
+
 app.use( '/api/v1/tasks', tasksRouter );
 
 app.use( errorHandler );
 
 app.listen( 3000, '0.0.0.0', () => {
+
   console.log( `API Gateway listening on port ${PORT}` );
+  
 });

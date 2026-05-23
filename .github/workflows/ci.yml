@@ -37,7 +37,7 @@ jobs:
         run: |
           cd coordinator
           pip install -r requirements.txt
-          python -c "from main import get_db_conn; from registry import Registry; from poller import run_poller; from queue_consumer import run_result_consumer; print('ok')"
+          python -c "from internal.queue import run_due_consumer, run_result_consumer, run_reconciliation_poller; from internal.registry import Registry; from main import get_db_conn; print('ok')"
 
   worker:
     runs-on: ubuntu-latest
