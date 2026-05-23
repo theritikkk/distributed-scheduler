@@ -7,45 +7,48 @@ A fault-tolerant, distributed **cron-as-a-service** that schedules one-time and 
 ```
                     ┌─────────────────────────────────────────────────────────┐
                     │                     API Gateway (Node.js)               │
-                    │  REST CRUD • JWT Auth • Rate Limit • Validation        │
-                    └───────────────────────────┬───────────────────────────┘
+                    │  REST CRUD • JWT Auth • Rate Limit • Validation         │
+                    └───────────────────────────┬─────────────────────────--──┘
                                                 │
                     ┌───────────────────────────▼───────────────────────────┐
-                    │                  PostgreSQL                            │
-                    │  users • tasks • task_executions • workers             │
+                    │                  PostgreSQL                           │
+                    │  users • tasks • task_executions • workers            │
                     └───────┬───────────────────────────────────┬───────────┘
                             │                                   │
-          ┌─────────────────▼──────────────┐    ┌──────────────▼─────────────┐
-          │  Coordinator (Python)          │    │  RabbitMQ                  │
-          │  • Poll DB for due tasks        │───▶│  scheduler.tasks           │
-          │  • Publish to task queue        │    │  scheduler.results          │
-          │  • Consume results → update DB  │◀───│  (persistent, durable)     │
-          │  • Worker heartbeat / health    │    └──────────────┬──────────────┘
-          └────────────────────────────────┘                 │
-                                                              │ consume
-                    ┌─────────────────────────────────────────▼───────────────┐
+          ┌─────────────────▼──────────-────┐    ┌──────────────▼──────────-───┐
+          │  Coordinator (Python)           │    │  RabbitMQ                   │
+          │  • Delay wakeups → due queue    │───▶│  delay / due / tasks        │
+          │  • Publish work to workers      │    │  retry_delay + DLQ          │
+          │  • Consume results → update DB  │◀───│  results                    │
+          │  • Slow reconcile (safety net)  │    └──────────────┬──────────────┘
+          └───────────────────────────────-─┘                   │
+                                                                │ consume
+                    ┌───────────────────────────────────────────▼─────────────┐
                     │  Worker 1 (Python) │  Worker 2 (Python) │  Worker N     │
-                    │  • Register + heartbeat in DB                          │
-                    │  • Execute task (e.g. shell command from payload)      │
-                    │  • Publish result to scheduler.results                │
-                    └───────────────────────────────────────────────────────┘
+                    │  • Register + heartbeat in DB                           │
+                    │  • Execute task (e.g. shell command from payload)       │
+                    │  • Publish result to scheduler.results                  │
+                    └──────────────────────────────────────────────────────--─┘
 ```
 
 ### Components
 
-| Component | Tech | Role |
-|-----------|------|------|
-| **API Gateway** | Node.js, Express, TypeScript | REST API for task CRUD, JWT auth, rate limiting, input validation. Publishes new/updated tasks to RabbitMQ. |
-| **Coordinator** | Python | Polls DB for `next_execution_time <= NOW()`, publishes to `scheduler.tasks`; consumes `scheduler.results` and updates `task_executions` and tasks (and next run for recurring). Runs worker heartbeat checker (mark stale workers offline). |
-| **Workers** | Python | Register in DB, send heartbeats, consume from `scheduler.tasks`, execute task (e.g. `command` in payload), publish result to `scheduler.results`. |
-| **Message Queue** | RabbitMQ | Decouples API/coordinator from workers; ensures tasks are not lost if workers fail (persistent queues). |
-| **Database** | PostgreSQL | Users, tasks, task_executions, workers. Indexed for time-based and user-scoped queries. |
-| **Monitoring** | Prometheus, Grafana | Metrics from API gateway; optional dashboards. |
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+|               Component              |                                    Tech                                    |                                                                                    Role                                                                                                                  |
+|--------------------------------------|----------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|            **API Gateway**           |                          Node.js, Express, TypeScript                      | REST API for task CRUD, JWT auth, rate limiting, input validation. Publishes schedule wakeups to RabbitMQ (`scheduler.delay` / `scheduler.due`).                                                         |
+|            **Coordinator**           |                                   Python                                   | TTL wakeups (`scheduler.delay` → `scheduler.due`), dispatch to `scheduler.tasks`, consume `scheduler.results` (idempotent), slow reconciliation poller, worker heartbeat checker.                        |
+|              **Workers**             |                                   Python                                   | Register in DB, send heartbeats, consume `scheduler.tasks`, idempotent execution by `executionId`, retry with `scheduler.retry_delay`, DLQ after max retries, publish results to `scheduler.results`.    |
+|           **Message Queue**          |                                  RabbitMQ                                  | Decouples API/coordinator from workers; ensures tasks are not lost if workers fail (persistent queues).                                                                                                  |
+|             **Database**             |                                 PostgreSQL                                 | Users, tasks, task_executions, workers. Indexed for time-based and user-scoped queries.                                                                                                                  |
+|            **Monitoring**            |                             Prometheus, Grafana                            | Metrics from API gateway; optional dashboards.                                                                                                                                                           |
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 
 ### Data flow
 
-1. **Create task**: Client → API (JWT) → INSERT task, publish `{ taskId }` to queue (optional; coordinator also polls).
-2. **Execution**: Coordinator polls DB for due tasks → creates `task_execution` row → publishes full task payload to `scheduler.tasks` → worker consumes → runs command → publishes result to `scheduler.results` → coordinator consumes → updates `task_executions` and `tasks` (and `next_execution_time` for recurring).
+1. **Create task**: Client → API (JWT) → INSERT task → publish schedule wakeup to `scheduler.delay` (TTL → `scheduler.due`).
+2. **Execution**: Coordinator consumes `scheduler.due` → creates `task_execution` row → publishes payload to `scheduler.tasks` → worker consumes → runs command → retries via `scheduler.retry_delay` on failure → DLQ after max retries → publishes result to `scheduler.results` → coordinator consumes → updates `task_executions` and `tasks` (and `next_execution_time` for recurring).
 
 ### Database schema (summary)
 
