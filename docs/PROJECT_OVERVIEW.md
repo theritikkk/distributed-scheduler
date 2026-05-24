@@ -23,9 +23,9 @@ So it’s like “cron + a queue + an API”: **cron-as-a-service**, but distrib
         │
         ▼
   ┌─────────────────────────────────────────────────────────────────┐
-  │  API GATEWAY (Node.js / Express / TypeScript)                     │
-  │  • REST API: create/read/update/delete tasks, auth, rate limit   │
-  │  • Talks to: PostgreSQL + RabbitMQ                               │
+  │  API GATEWAY (Node.js / Express / TypeScript)                   │
+  │  • REST API: create/read/update/delete tasks, auth, rate limit  │
+  │  • Talks to: PostgreSQL + RabbitMQ                              │
   └─────────────────────────────────────────────────────────────────┘
         │                                    │
         ▼                                    ▼
@@ -36,26 +36,26 @@ So it’s like “cron + a queue + an API”: **cron-as-a-service**, but distrib
   │  • executions│                   │    queue     │
   │  • workers   │                   └──────┬───────┘
   └──────┬───────┘                          │
-        │                                  │
-        │    ┌─────────────────────────────┘
-        │    │
-        ▼    ▼
+         │                                  │
+         │    ┌─────────────────────────────┘
+         │    │
+         ▼    ▼
   ┌─────────────────────────────────────────────────────────────────┐
-  │  COORDINATOR (Python)                                            │
-  │  • Polls DB: “which tasks are due now?”                          │
-  │  • Puts due tasks into RabbitMQ task queue                        │
-  │  • Reads results from RabbitMQ result queue → updates DB          │
-  │  • Marks workers “offline” if they stop sending heartbeats       │
+  │  COORDINATOR (Python)                                           │
+  │  • Polls DB: “which tasks are due now?”                         │
+  │  • Puts due tasks into RabbitMQ task queue                      │
+  │  • Reads results from RabbitMQ result queue → updates DB        │
+  │  • Marks workers “offline” if they stop sending heartbeats      │
   └─────────────────────────────────────────────────────────────────┘
         │
         │  (workers pull tasks from the same RabbitMQ task queue)
         ▼
   ┌─────────────────────────────────────────────────────────────────┐
-  │  WORKERS (Python, can run many copies)                           │
-  │  • Register in DB + send heartbeats                              │
-  │  • Consume messages from task queue                              │
-  │  • Run the task (e.g. shell command from payload)                │
-  │  • Send result back to result queue                              │
+  │  WORKERS (Python, can run many copies)                          │
+  │  • Register in DB + send heartbeats                             │
+  │  • Consume messages from task queue                             │
+  │  • Run the task (e.g. shell command from payload)               │
+  │  • Send result back to result queue                             │
   └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -70,14 +70,14 @@ So:
 
 ## Tech stack (what runs where)
 
-| Part            | Technology        | Your experience |
-|-----------------|-------------------|------------------|
-| **API Gateway** | Node.js, Express, TypeScript | You know JS/TS |
-| **Coordinator** | Python 3.12       | You know Python  |
-| **Worker**      | Python 3.12       | You know Python  |
-| **Database**    | PostgreSQL 15     | SQL / Docker     |
-| **Message queue** | RabbitMQ        | Docker           |
-| **Containers**  | Docker, Docker Compose | You know Docker |
+| Part              | Technology                   | Your experience  |
+|-------------------|------------------------------|------------------|
+| **API Gateway**   | Node.js, Express, TypeScript | You know JS/TS   |
+| **Coordinator**   | Python 3.12                  | You know Python  |
+| **Worker**        | Python 3.12                  | You know Python  |
+| **Database**      | PostgreSQL 15                | SQL / Docker     |
+| **Message queue** | RabbitMQ                     | Docker           |
+| **Containers**    | Docker, Docker Compose       | You know Docker  |
 
 Everything can run locally with **Docker Compose** (one command to start all services).
 
@@ -158,7 +158,7 @@ So: **queue → run command → result queue**. Multiple worker processes can ru
 
 1. You send **POST /api/v1/tasks** with JWT and body (task name, `command_payload`, schedule, etc.).
 2. **API** inserts a row in **tasks** (e.g. `status = 'scheduled'`, `next_execution_time = ...`) and can publish to RabbitMQ.
-3. **Coordinator** (poller) sees the due task in the DB, creates **task_executions** row, and publishes to **scheduler.tasks**.
+3. **Coordinator** consumes **`scheduler.due`** (after TTL from **`scheduler.delay`**), creates a **task_executions** row, and publishes to **scheduler.tasks**. A slow reconciliation loop nudges any missed due tasks.
 4. A **Worker** consumes that message, runs the command, and publishes to **scheduler.results**.
 5. **Coordinator** (result consumer) gets the result, updates **task_executions** and **tasks**. If recurring, it sets the next `next_execution_time`.
 6. You call **GET /api/v1/tasks/:id/executions** to see the run in the API.
@@ -190,7 +190,7 @@ Then you can register, login, create tasks, and list executions as in the main R
 ## Project folder structure (what you care about)
 
 - **api-gateway/** – Node/TS app (you know this).
-- **coordinator/** – Python: `main.py`, `poller.py`, `queue_consumer.py`, `registry.py`, `requirements.txt`, `Dockerfile`.
+- **coordinator/** – Python: `main.py`, `internal/queue/` (topology, publisher, due/result consumers, reconciliation), `internal/registry/` (worker heartbeat), `requirements.txt`, `Dockerfile`.
 - **worker/** – Python: `main.py`, `requirements.txt`, `Dockerfile`.
 - **database/init.sql** – PostgreSQL schema.
 - **docker-compose.yml** – Defines all services and env vars.

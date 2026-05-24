@@ -1,4 +1,4 @@
-import amqplib from 'amqplib';
+import * as amqplib from "amqplib";
 
 const DELAY_QUEUE = 'scheduler.delay';
 const DUE_QUEUE = 'scheduler.due';
@@ -8,10 +8,13 @@ const RETRY_DELAY_QUEUE = 'scheduler.retry_delay';
 const DLX_EXCHANGE = 'scheduler.dlx';
 const TASK_DLQ = 'scheduler.tasks.dlq';
 
-let _connection: amqp.Connection | null = null;
-let channel: amqp.Channel | null = null;
+// Use a loose type for the underlying connection to accommodate differing
+// amqplib/transport implementations (e.g. ChannelModel) that may not
+// strictly satisfy the Connection interface used in types.
+let _connection: any = null;
+let channel: amqplib.Channel | null = null;
 
-async function declareTopology(ch: amqp.Channel): Promise<void> {
+async function declareTopology(ch: amqplib.Channel): Promise<void> {
   await ch.assertExchange(DLX_EXCHANGE, 'direct', { durable: true });
 
   await ch.assertQueue(DELAY_QUEUE, {
