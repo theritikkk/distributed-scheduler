@@ -1,0 +1,16 @@
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: default
+  group_by: ['alertname', 'severity']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+
+receivers:
+  - name: default
+    # Wire email/Slack/PagerDuty here for production, e.g.:
+    # slack_configs:
+    #   - api_url: 'https://hooks.slack.com/services/...'
+    #     channel: '#alerts'

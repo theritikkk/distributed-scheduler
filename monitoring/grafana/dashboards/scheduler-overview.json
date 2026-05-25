@@ -1,0 +1,77 @@
+{
+  "title": "Distributed Scheduler",
+  "uid": "distributed-scheduler",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "panels": [
+    {
+      "type": "stat",
+      "title": "scheduler.tasks depth",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "max(rabbitmq_queue_messages{queue=\"scheduler.tasks\"}) or max(scheduler_rabbitmq_queue_messages{queue=\"scheduler.tasks\"})",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1000 }] } } }
+    },
+    {
+      "type": "stat",
+      "title": "DLQ depth",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "targets": [
+        {
+          "expr": "max(rabbitmq_queue_messages{queue=\"scheduler.tasks.dlq\"}) or max(scheduler_rabbitmq_queue_messages{queue=\"scheduler.tasks.dlq\"})",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] } } }
+    },
+    {
+      "type": "stat",
+      "title": "Workers up",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "targets": [{ "expr": "sum(scheduler_worker_consumer_up)", "refId": "A" }]
+    },
+    {
+      "type": "timeseries",
+      "title": "Task ack rate",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "targets": [{ "expr": "sum(rate(scheduler_worker_tasks_acked_total[1m]))", "legendFormat": "acks/s", "refId": "A" }]
+    },
+    {
+      "type": "timeseries",
+      "title": "Completed vs failed vs retried",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "targets": [
+        { "expr": "sum(rate(scheduler_worker_tasks_completed_total[1m]))", "legendFormat": "completed", "refId": "A" },
+        { "expr": "sum(rate(scheduler_worker_tasks_failed_total[1m]))", "legendFormat": "failed", "refId": "B" },
+        { "expr": "sum(rate(scheduler_worker_tasks_retried_total[1m]))", "legendFormat": "retried", "refId": "C" },
+        { "expr": "sum(rate(scheduler_worker_tasks_dlq_total[1m]))", "legendFormat": "dlq", "refId": "D" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Task duration p95",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(scheduler_worker_task_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p95",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Coordinator results applied",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "targets": [
+        { "expr": "sum(rate(scheduler_coordinator_results_applied_total[1m])) by (status)", "legendFormat": "{{status}}", "refId": "A" }
+      ]
+    }
+  ]
+}

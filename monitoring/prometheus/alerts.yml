@@ -1,0 +1,73 @@
+groups:
+  - name: distributed-scheduler
+    interval: 30s
+    rules:
+      # Queue backlog: workers cannot keep up
+      - alert: TaskQueueBacklogHigh
+        expr: |
+          (
+            rabbitmq_queue_messages{queue="scheduler.tasks"}
+            or scheduler_rabbitmq_queue_messages{queue="scheduler.tasks"}
+          ) > 1000
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Task queue backlog > 1000"
+          description: "scheduler.tasks has {{ $value }} messages. Workers are overloaded or stuck."
+
+      # DLQ: poison / permanent failures — immediate ops attention
+      - alert: DLQMessagesPresent
+        expr: |
+          (
+            rabbitmq_queue_messages{queue="scheduler.tasks.dlq"}
+            or scheduler_rabbitmq_queue_messages{queue="scheduler.tasks.dlq"}
+          ) > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Messages in dead-letter queue"
+          description: "scheduler.tasks.dlq has {{ $value }} message(s). Inspect poison payloads and fix root cause."
+
+      # Worker not consuming
+      - alert: WorkerConsumerDown
+        expr: sum(scheduler_worker_consumer_up) == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "No worker consumers connected"
+          description: "scheduler_worker_consumer_up is 0 for all workers."
+
+      # Ack rate zero while consumer claims to be up
+      - alert: WorkerAckRateZero
+        expr: |
+          sum(scheduler_worker_consumer_up) > 0
+          and sum(rate(scheduler_worker_tasks_acked_total[5m])) == 0
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Worker ack rate is zero"
+          description: "Consumers are up but no tasks acked in 5m — possible deadlock or blocking execution."
+
+      # High retry rate
+      - alert: HighTaskRetryRate
+        expr: sum(rate(scheduler_worker_tasks_retried_total[5m])) > 0.5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Elevated task retry rate"
+          description: "Workers are retrying tasks frequently; check command failures."
+
+      # DLQ growth rate
+      - alert: DLQGrowthRate
+        expr: sum(rate(scheduler_worker_tasks_dlq_total[10m])) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Tasks entering DLQ"
+          description: "Poison messages are being produced after max retries."
