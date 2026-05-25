@@ -63,6 +63,9 @@ Indexes on `tasks(next_execution_time)`, `tasks(user_id, status)`, `task_executi
 
 For a **full walkthrough** of the system (what each part does, how they connect, and the tech stack), see **[docs/PROJECT_OVERVIEW.md](docs/PROJECT_OVERVIEW.md)**.
 
+Coordinator file guide: **[coordinator/README.md](coordinator/README.md)**.  
+Monitoring & alerts: **[docs/MONITORING.md](docs/MONITORING.md)**.
+
 ## Quick start
 
 ### Prerequisites
