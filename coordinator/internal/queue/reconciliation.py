@@ -9,6 +9,7 @@ import time
 import pika  # type: ignore[import-untyped]
 
 from .connection import connect_blocking
+from metrics import RECONCILIATION_NUDGED
 from .topology import DUE_QUEUE, declare_scheduler_topology
 
 logger = logging.getLogger(__name__)
@@ -52,6 +53,7 @@ def run_reconciliation_poller( get_db_conn, rabbit_url: str ):
                     properties=pika.BasicProperties( delivery_mode=2, content_type="application/json" ),
                 )
 
+                RECONCILIATION_NUDGED.inc()
                 logger.info( "reconciliation: nudged task %s to due queue", task_id )
 
         except Exception as e:

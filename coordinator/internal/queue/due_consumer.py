@@ -11,6 +11,7 @@ import pika  # type: ignore[import-untyped]
 
 from .connection import connect_blocking
 from .publisher import publish_schedule_wakeup
+from metrics import DUE_DISPATCHED
 from .topology import DUE_QUEUE, TASK_QUEUE, declare_scheduler_topology
 
 logger = logging.getLogger(__name__)
@@ -144,7 +145,10 @@ def run_due_consumer( get_db_conn, rabbit_url: str ):
                 body=out,
                 properties=pika.BasicProperties( delivery_mode=2, content_type="application/json" ),
             )
+
+            DUE_DISPATCHED.inc()
             logger.info( "due consumer: task %s execution %s", task_id, execution_id )
+            
         except Exception as e:
             logger.exception( "due consumer error: %s", e )
 

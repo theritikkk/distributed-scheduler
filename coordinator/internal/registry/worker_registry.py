@@ -5,6 +5,8 @@ import logging
 import threading
 import time
 
+from metrics import WORKERS_MARKED_OFFLINE
+
 logger = logging.getLogger(__name__)
 
 
@@ -30,6 +32,7 @@ class Registry:
                             """
                         )
                         if cur.rowcount and cur.rowcount > 0:
+                            WORKERS_MARKED_OFFLINE.inc( cur.rowcount )
                             logger.info("marked %s worker(s) offline", cur.rowcount)
                 finally:
                     conn.close()

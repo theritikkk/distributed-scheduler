@@ -11,6 +11,7 @@ from croniter import croniter  # type: ignore[import-untyped]
 
 from .connection import connect_blocking
 from .publisher import publish_schedule_wakeup_url
+from metrics import RESULTS_APPLIED, RESULTS_SKIPPED_IDEMPOTENT
 from .topology import RESULT_QUEUE
 
 logger = logging.getLogger( __name__ )
@@ -60,6 +61,7 @@ def run_result_consumer( get_db_conn, rabbit_url: str ):
                     )
                     if cur.rowcount == 0:
                         conn.rollback()
+                        RESULTS_SKIPPED_IDEMPOTENT.inc()
                         ch.basic_ack( delivery_tag = method.delivery_tag )
                         return
 
@@ -85,6 +87,8 @@ def run_result_consumer( get_db_conn, rabbit_url: str ):
                                 ( next_run, task_id ),
                             )
                 conn.commit()
+                RESULTS_APPLIED.labels( status = status ).inc()
+                
             except Exception:
                 conn.rollback()
                 raise
