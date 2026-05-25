@@ -7,7 +7,13 @@ import { AppError } from '../middleware/errorHandler';
 import { JwtPayload } from '../middleware/auth';
 
 export const authRouter = Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'change-me-in-production';
+
+if( !process.env.JWT_SECRET ) {  
+  throw new Error( 'JWT_SECRET missing' );
+}
+
+const JWT_SECRET = process.env.JWT_SECRET;
+
 const SALT_ROUNDS = 10;
 
 authRouter.post(
@@ -19,11 +25,10 @@ authRouter.post(
     body('password')
       .isLength( { min: 8 } )
       .withMessage( 'Password must be at least 8 characters' )
-      .matches(/\d/)
-      .matches(/[a-z]/)
-      .matches(/[A-Z]/)
-      .matches(/[!@$%&*]/)
-      .withMessage( 'Password must contain a number' ),
+      .matches(/\d/).withMessage( 'Password must contain a number' )
+      .matches(/[a-z]/).withMessage( 'Password must contain a lowercase letter' )
+      .matches(/[A-Z]/).withMessage( 'Password must contain an uppercase letter' )
+      .matches(/[!@$%&*]/).withMessage( 'Password must contain a special character' ),
   ],
 
   async( req: Request, res: Response, next: NextFunction ) => {
