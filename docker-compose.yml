@@ -123,6 +123,139 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+  
+  worker-4:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    container_name: worker-4
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      WORKER_ID: worker-4
+      METRICS_PORT: "9100"
+    ports:
+      - "9104:9100"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+  
+  worker-5:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    container_name: worker-5
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      WORKER_ID: worker-5
+      METRICS_PORT: "9100"
+    ports:
+      - "9105:9100"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    
+  worker-6:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    container_name: worker-6
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      WORKER_ID: worker-6
+      METRICS_PORT: "9100"
+    ports:
+      - "9106:9100"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  worker-7:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    container_name: worker-7
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      WORKER_ID: worker-7
+      METRICS_PORT: "9100"
+    ports:
+      - "9107:9100"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  worker-8:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    container_name: worker-8
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      WORKER_ID: worker-8
+      METRICS_PORT: "9100"
+    ports:
+      - "9108:9100"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+  
+  worker-9:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    container_name: worker-9
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      WORKER_ID: worker-9
+      METRICS_PORT: "9100"
+    ports:
+      - "9109:9100"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    
+  worker-10:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    container_name: worker-10
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      WORKER_ID: worker-10
+      METRICS_PORT: "9100"
+    ports:
+      - "9110:9100"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
 
   rabbitmq-exporter:
     image: kbudde/rabbitmq-exporter:latest
