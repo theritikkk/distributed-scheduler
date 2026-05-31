@@ -27,7 +27,10 @@ scrape_configs:
 
   - job_name: worker
     static_configs:
-      - targets: ['worker:9100']
+      - targets:
+          - 'worker-1:9100'
+          - 'worker-2:9100'
+          - 'worker-3:9100'
     metrics_path: /metrics
 
   - job_name: rabbitmq

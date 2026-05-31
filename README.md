@@ -2,7 +2,7 @@
 
 A fault-tolerant, distributed **cron-as-a-service** that schedules one-time and recurring tasks and executes them across multiple worker nodes. Built with a microservices architecture, message queues, and production-oriented reliability patterns.
 
-[![CI](https://github.com/distributed-scheduler/distributed-scheduler/actions/workflows/ci.yml/badge.svg)](https://github.com/distributed-scheduler/distributed-scheduler/actions/workflows/ci.yml)
+[CI](https://github.com/theritikkk/distributed-scheduler/blob/main/.github/workflows/ci.yml)
 
 ---
 

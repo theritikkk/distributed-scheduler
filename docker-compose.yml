@@ -65,20 +65,64 @@ services:
       rabbitmq:
         condition: service_healthy
 
-  worker:
+  # Named worker services so Prometheus can scrape each replica independently.
+  # Each gets a unique container_name, WORKER_ID, and host port.
+  worker-1:
     build:
       context: ./worker
       dockerfile: Dockerfile
+    container_name: worker-1
     restart: unless-stopped
     env_file:
       - .env
+    environment:
+      WORKER_ID: worker-1
+      METRICS_PORT: "9100"
+    ports:
+      - "9101:9100"
     depends_on:
       postgres:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
-    deploy:
-      replicas: 3
+
+  worker-2:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    container_name: worker-2
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      WORKER_ID: worker-2
+      METRICS_PORT: "9100"
+    ports:
+      - "9102:9100"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  worker-3:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    container_name: worker-3
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      WORKER_ID: worker-3
+      METRICS_PORT: "9100"
+    ports:
+      - "9103:9100"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
 
   rabbitmq-exporter:
     image: kbudde/rabbitmq-exporter:latest
