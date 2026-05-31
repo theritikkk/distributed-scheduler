@@ -32,21 +32,21 @@ A fault-tolerant, distributed cron-as-a-service that schedules one-time and recu
                     └───────────────────────────┬─────────────────────────────┘
                                                 │ INSERT task + publish wakeup
                     ┌───────────────────────────▼───────────────────────────┐
-                    │                      PostgreSQL                        │
-                    │    users · tasks · task_executions · workers           │
+                    │                      PostgreSQL                       │
+                    │    users · tasks · task_executions · workers          │
                     └───────┬───────────────────────────────────┬───────────┘
                             │                                   │
           ┌─────────────────▼────────────────┐    ┌────────────▼────────────────┐
-          │       Coordinator (Python)        │    │          RabbitMQ            │
-          │  · TTL wakeups → scheduler.due    │───▶│  scheduler.delay            │
-          │  · Dispatch work to workers       │    │  scheduler.due              │
-          │  · Consume results → update DB    │◀───│  scheduler.tasks            │
-          │  · Slow reconciliation (120s)     │    │  scheduler.retry_delay      │
-          │  · Worker heartbeat checker       │    │  scheduler.results          │
+          │       Coordinator (Python)       │    │          RabbitMQ           │
+          │  · TTL wakeups → scheduler.due   │───▶│  scheduler.delay            │
+          │  · Dispatch work to workers      │    │  scheduler.due              │
+          │  · Consume results → update DB   │◀───│  scheduler.tasks            │
+          │  · Slow reconciliation (120s)    │    │  scheduler.retry_delay      │
+          │  · Worker heartbeat checker      │    │  scheduler.results          │
           └──────────────────────────────────┘    │  scheduler.tasks.dlq (DLQ)  │
-                                                   └────────────┬────────────────┘
-                                                                │ consume
-                    ┌───────────────────────────────────────────▼─────────────┐
+                                                  └───────────┬-────────────────┘
+                                                              │ consume
+                    ┌──────────────────────────────────────────▼─────────────--┐
                     │           worker-1 │ worker-2 │ worker-3 (Python)        │
                     │  · Register + heartbeat in DB                            │
                     │  · Idempotent execution by executionId                   │
