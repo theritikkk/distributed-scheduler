@@ -1,202 +1,208 @@
-# Architecture and Trade-offs
+# Architecture and Design Decisions
 
-This document explains the core design choices in the distributed scheduler, especially:
-
-- why RabbitMQ is used
-- why the coordinator polls the database
-- what trade-offs come with these decisions
-
-It is written for interviewers/recruiters and for engineers reviewing the project.
+This document explains the core design choices in the distributed scheduler — why things are built the way they are, what trade-offs were made, and how the pieces fit together. Written for engineers and interviewers reviewing the project.
 
 ---
 
 ## System Overview
 
-The scheduler is split into independent services:
+The scheduler is split into independent services, all running on a single EC2 instance via Docker Compose:
 
-- `api-gateway` (Node.js/TypeScript): auth + task CRUD APIs
-- `coordinator` (Python): finds due tasks, publishes them to workers, consumes execution results
-- `worker` (Python): executes commands and reports status
-- `postgres`: stores users, tasks, executions, worker heartbeats
-- `rabbitmq`: message broker between coordinator and workers
+| Service | Language | Role |
+|---------|----------|------|
+| `api-gateway` | Node.js / TypeScript | Auth + task CRUD REST API |
+| `coordinator` | Python | Finds due tasks, dispatches to workers, consumes results |
+| `worker-1`, `worker-2`, `worker-3` | Python | Execute commands and report status |
+| `postgres` | PostgreSQL 15 | Source of truth for tasks, executions, workers |
+| `rabbitmq` | RabbitMQ 3 | Message broker between coordinator and workers |
+| `prometheus` | Prometheus | Scrapes metrics from all services |
+| `grafana` | Grafana | Dashboards + Loki log queries |
+| `loki` | Grafana Loki | Log aggregation (7-day retention) |
+| `promtail` | Grafana Promtail | Collects container logs via Docker socket |
+| `alertmanager` | Prometheus Alertmanager | Alert routing |
+| `rabbitmq-exporter` | kbudde/rabbitmq-exporter | Exposes RabbitMQ queue metrics to Prometheus |
 
-High-level data flow:
+---
 
-1. Client creates a task via API.
-2. Task is stored in PostgreSQL with a `next_execution_time`.
-3. Coordinator periodically polls DB for due tasks.
-4. Coordinator publishes due tasks to RabbitMQ (`scheduler.tasks`).
-5. Workers consume tasks, execute them, and publish results to `scheduler.results`.
-6. Coordinator consumes results and updates `task_executions` + `tasks`.
+## Scheduling Design: TTL + Dead-letter + Reconciliation
+
+### Why not just poll the database every few seconds?
+
+Polling works but burns database capacity continuously and adds baseline latency tied to the poll interval. At scale it becomes a bottleneck.
+
+### Primary path: TTL-based scheduling
+
+When a task is created or rescheduled, the API publishes a small wakeup message to `scheduler.delay` with a **per-message TTL** equal to the milliseconds until `next_execution_time`. When the TTL expires, RabbitMQ automatically dead-letters the message into `scheduler.due`.
+
+The coordinator consumes `scheduler.due`, locks the task row (`SELECT FOR UPDATE`), inserts a `task_executions` record, and publishes the full work payload to `scheduler.tasks`.
+
+```
+Task created
+     │
+     ▼
+scheduler.delay  (TTL = time until next_execution_time)
+     │
+     │  TTL expires → RabbitMQ dead-letters
+     ▼
+scheduler.due
+     │
+     ▼
+Coordinator → creates task_execution → publishes to scheduler.tasks
+     │
+     ▼
+Worker executes → publishes to scheduler.results
+     │
+     ▼
+Coordinator updates DB, reschedules if recurring
+```
+
+### Safety net: slow reconciliation
+
+Brokers restart, TTL edge cases happen. A background poller in the coordinator (default every 120s, `SCHEDULER_RECONCILE_INTERVAL_SEC`) scans PostgreSQL for any `scheduled` tasks already due and nudges them to `scheduler.due`. This is intentionally infrequent — it is a recovery mechanism, not the primary path.
+
+### Trade-offs
+
+| | TTL-based | Pure polling |
+|---|---|---|
+| DB load | Low — no hot loop | High — queries every few seconds |
+| Complexity | Higher — queue topology required | Lower |
+| Recovery | Needs reconciliation fallback | Built-in (next poll catches it) |
+| Latency | Near-zero (TTL expires exactly on time) | Tied to poll interval |
 
 ---
 
 ## Why RabbitMQ?
 
-### Why queue over direct execution?
+Using a queue between coordinator and workers instead of direct calls gives:
 
-Using a queue instead of calling workers directly gives:
+- **Reliability** — durable queues and persistent messages mean tasks survive worker crashes and broker restarts.
+- **Decoupling** — coordinator does not know or care which worker runs a task.
+- **Scalability** — multiple workers consume in parallel from the same queue; adding a worker requires no code changes.
+- **Back-pressure** — the queue absorbs bursts while workers catch up at their own pace.
 
-- **Decoupling**: API/coordinator do not need to know which worker will run the task.
-- **Reliability**: durable queues keep tasks safe if workers crash or restart.
-- **Scalability**: multiple workers can consume in parallel from the same queue.
-- **Back-pressure handling**: queue absorbs bursts while workers catch up.
-- **Operational flexibility**: workers can be added/removed without changing API logic.
+RabbitMQ specifically was chosen for its mature AMQP support, dead-letter exchange (DLX) mechanism (used for TTL scheduling and DLQ routing), and excellent management UI for debugging.
 
-### Why RabbitMQ specifically?
+### Queue topology
 
-- Mature, widely used AMQP broker.
-- Supports durable queues and persistent messages.
-- Good tooling and UI for demo/debugging (`:15672` management UI).
-- Easy Docker Compose integration for local and VM deployments.
-
----
-
-## Why delay queues (with lightweight reconciliation)?
-
-### Primary path: TTL + dead-letter scheduling
-
-When a task is created or rescheduled, the API publishes a small wakeup message to `scheduler.delay` with a **per-message TTL** equal to time-until-`next_execution_time`. When TTL expires, RabbitMQ **dead-letters** the message into `scheduler.due`.
-
-The coordinator consumes `scheduler.due`, locks the task row, creates a `task_executions` row, and publishes the full work payload to `scheduler.tasks`.
-
-### Why this replaces fast DB polling
-
-- **Lower steady-state DB load**: no hot loop querying every few seconds.
-- **Natural alignment with “run at time T”**: TTL expresses delay directly.
-- **Still DB-backed**: PostgreSQL remains the source of truth for schedules and history.
-
-### Why keep a slow reconciliation poller?
-
-Brokers restart, TTL edge cases, and operational surprises happen. A **slow** reconciliation scan (default every 120 seconds) finds any `scheduled` tasks that are already due and nudges them to `scheduler.due`. This is intentionally infrequent compared to the old 5-second poller.
-
-### Trade-offs
-
-**Pros**
-- Less aggressive polling
-- Clear separation between “wake up” (`scheduler.due`) and “execute work” (`scheduler.tasks`)
-
-**Cons**
-- TTL has practical upper bounds; reconciliation covers long horizons and recovery
-- Requires correct queue topology declarations across services
-
-### Why not pure DB polling only?
-
-Polling is easy to implement, but it burns database capacity continuously and adds baseline latency tied to poll interval. Delay-first scheduling reduces both, at the cost of more moving parts in RabbitMQ.
+| Queue | Purpose |
+|-------|---------|
+| `scheduler.delay` | Wakeup messages with per-message TTL. Dead-letters into `scheduler.due`. |
+| `scheduler.due` | Tasks whose TTL has expired and are ready to dispatch. |
+| `scheduler.tasks` | Full task payloads consumed by workers. |
+| `scheduler.retry_delay` | Failed tasks waiting for backoff TTL before retry. |
+| `scheduler.results` | Worker results consumed by coordinator to update DB. |
+| `scheduler.tasks.dlq` | Poison messages after `TASK_MAX_RETRIES` exhausted. |
 
 ---
 
-## Key Trade-offs
+## Retry Chain and DLQ
 
-### 1) Queue-based execution trade-offs
+On failure, the worker republishes the same payload (same `executionId`) to `scheduler.retry_delay` with exponential backoff (base 5s, max 5min). When that TTL expires, RabbitMQ dead-letters it back into `scheduler.tasks` for another attempt.
 
-**Pros**
-- Resilient to worker failures
-- Horizontal scaling is straightforward
-- Better separation of responsibilities
+After `TASK_MAX_RETRIES` (default 3) failures, the message is routed to `scheduler.tasks.dlq` via `scheduler.dlx` and a final `failed` result is published to `scheduler.results`. This prevents infinite retry loops and isolates poison messages for inspection.
 
-**Cons**
-- At-least-once delivery means tasks should be idempotent
-- Additional infrastructure (RabbitMQ) to deploy/monitor
-- More eventual consistency (status updates are asynchronous)
-
-### 2) Delay + reconciliation trade-offs
-
-**Pros**
-- Lower baseline DB load than frequent polling
-- Wakeups are explicit broker-managed timers
-
-**Cons**
-- More queue topology to declare consistently
-- Requires reconciliation for correctness under failure
-
-### 3) Command execution trade-offs
-
-Current worker executes command strings from payload for demo velocity.
-
-**Pros**
-- Very flexible for demonstrations
-- Easy to show end-to-end execution quickly
-
-**Cons**
-- Security risk in production if untrusted payloads are allowed
-- Requires sandboxing/allowlists/resource limits for hardening
+```
+scheduler.tasks
+      │
+      ▼ failure
+scheduler.retry_delay  (TTL = exponential backoff)
+      │
+      │ TTL expires
+      ▼
+scheduler.tasks  (retry attempt)
+      │
+      │ retries exhausted
+      ▼
+scheduler.tasks.dlq  +  failed result → coordinator → DB
+```
 
 ---
 
-## Reliability Model
+## Idempotency
 
-This system follows an **at-least-once** processing style:
+At-least-once delivery means the same message can be delivered more than once (after broker restart, nack, etc.). The system handles this at two points:
 
-- task messages are durable/persistent in RabbitMQ
-- retries/re-delivery may happen after failures
-- execution history is stored in `task_executions`
+**Worker**: before executing, checks `task_executions.completed_at` for that `executionId`. If already set, it acks without re-running.
 
-To make this production-grade, tasks should be idempotent and/or include deduplication keys.
+**Result consumer**: updates `task_executions` only where `completed_at IS NULL`, so duplicate result messages do not double-apply state or double-advance recurring schedules.
 
 ---
 
-## Failure Handling Approach
+## Worker Design: Named Replicas
 
-- **Worker heartbeat tracking**: coordinator marks workers offline if heartbeat is stale.
-- **Execution tracking**: each run gets a `task_executions` row before publication.
-- **Result-driven state updates**: coordinator updates task status based on worker result.
-- **Recurring tasks**: next run time computed from cron and rescheduled.
+The three workers (`worker-1`, `worker-2`, `worker-3`) are declared as separate named services in `docker-compose.yml` rather than using `deploy.replicas`. This was a deliberate choice for observability:
 
----
+- Each worker has a unique `WORKER_ID` environment variable and a unique host port (`9101`, `9102`, `9103`).
+- Prometheus can scrape each worker independently at its own target, giving per-worker metrics in Grafana.
+- With `deploy.replicas`, all replicas share a single DNS name and Prometheus would only reach one of them round-robin.
 
-## Advanced scheduling, retries, DLQ, and idempotency
-
-### Delay queues instead of fast polling
-
-Primary scheduling uses **per-message TTL** on `scheduler.delay` so messages **dead-letter** into `scheduler.due` when `next_execution_time` is reached. The coordinator consumes `scheduler.due`, creates a `task_executions` row under a row lock, and publishes work to `scheduler.tasks`.
-
-A **slow reconciliation loop** (default every 120s, `SCHEDULER_RECONCILE_INTERVAL_SEC`) nudges any still-due `scheduled` tasks to `scheduler.due` to recover from missed TTL wakeups (broker restart, rare races).
-
-### Retry chain and DLQ
-
-On failure, the worker republishes the same payload (same `executionId`) to `scheduler.retry_delay` with exponential backoff; when TTL expires, RabbitMQ dead-letters it back to `scheduler.tasks`. After `maxRetries` (default `TASK_MAX_RETRIES=3`), the worker publishes a poison message to `scheduler.tasks.dlq` (via `scheduler.dlx`) and emits a final **failed** result to `scheduler.results`.
-
-Poison messages are isolated into a DLQ after retries are exhausted, preventing infinite retry loops and allowing operational inspection/replay.
-
-### Idempotency (`execution_id`)
-
-- **Worker**: before running a command, it checks `task_executions.completed_at` for that `executionId`. If already set, it **acks** without re-running (duplicate delivery safe).
-- **Result consumer**: updates `task_executions` only where `completed_at IS NULL`, so duplicate result messages do not double-apply state or double-advance recurring schedules.
-
-### Trade-offs
-
-- Delay TTL has practical upper bounds; reconciliation covers edge cases.
-- Retry uses wall-clock backoff in the broker; very long backoffs need chunking or a DB-backed retry scheduler at huge scale.
+Each worker registers itself in the `workers` table on startup and sends a heartbeat every 20 seconds. The coordinator marks workers `offline` if their heartbeat is stale by more than 2 minutes.
 
 ---
 
-## Performance/Scale Notes
+## Observability Design
 
-Defaults are tuned for demo and moderate load:
+### Metrics
 
-- **Primary**: TTL-based wakeups + `scheduler.due` consumer
-- **Safety net**: reconciliation scan every 120 seconds (`SCHEDULER_RECONCILE_INTERVAL_SEC`)
-- **Retries**: exponential backoff via `scheduler.retry_delay` (`TASK_MAX_RETRIES`)
+Prometheus scrapes four jobs:
 
-As load grows:
+- `api-gateway:3000/metrics` — HTTP request rates, latency
+- `coordinator:9090/metrics` — dispatch rates, reconciliation nudges, results applied, workers marked offline
+- `worker-1:9100`, `worker-2:9100`, `worker-3:9100` — per-worker task starts, completions, acks, duration histogram, DLQ count
+- `rabbitmq-exporter:9419` — queue depths and message rates per queue
 
-- increase worker replicas
-- tune reconciliation interval and batch size
-- add indexes and partitioning for execution history
-- move from single VM to managed AWS services (RDS, MQ/ECS/EKS)
+The worker metrics use a `worker_id` label so Grafana can break down utilization per replica.
+
+### Logs
+
+Promtail uses Docker socket discovery to collect logs from every container automatically — no per-service config. Each log line is tagged with `service`, `container`, and `stream` labels and shipped to Loki. Grafana's Explore tab supports LogQL queries for debugging and correlating metrics with logs.
+
+### Alerts
+
+Six alert rules in `monitoring/prometheus/alerts.yml` cover: queue backlog, DLQ growth, worker consumer down, ack rate zero, high retry rate, and DLQ growth rate.
+
+---
+
+## Security Model
+
+- PostgreSQL and RabbitMQ AMQP port (5672) are not exposed to the host — `expose:` rather than `ports:`. Only the RabbitMQ management UI (15672) is optionally accessible.
+- Loki (3100) is internal only.
+- All secrets are loaded from `.env` via `env_file` — nothing is hardcoded in `docker-compose.yml`.
+- JWT authentication on all task endpoints.
+- Grafana has login enabled by default (`GF_USERS_ALLOW_SIGN_UP: false`).
 
 ---
 
-## Why this architecture is resume-worthy
+## Command Execution Trade-offs
 
-This project demonstrates:
-- event-driven distributed orchestration
-- delayed queue scheduling using RabbitMQ TTL + DLX
-- idempotent message processing under at-least-once delivery
-- retry pipelines with exponential backoff and DLQ isolation
-- reconciliation-based self-healing
-- worker lifecycle tracking and heartbeat monitoring
-- transactional coordination between PostgreSQL and RabbitMQ
+Workers execute the `command` string from `command_payload` as a shell subprocess. This is flexible for demonstration but has implications:
+
+**Pros**: easy to show end-to-end execution with any shell command, no pre-registration of task types required.
+
+**Cons**: security risk if untrusted payloads are accepted. Production hardening would add an allowlist of permitted commands, sandboxing (e.g. container-per-task), and resource limits.
 
 ---
+
+## Failure Scenarios
+
+| Failure | What happens |
+|---------|-------------|
+| Worker crashes mid-execution | RabbitMQ re-delivers unacked message to another worker. Idempotency check prevents double execution if the first run completed. |
+| Broker restart | Durable queues + persistent messages preserve all in-flight tasks. Reconciliation recovers any missed TTL wakeups. |
+| Coordinator restart | Slow reconciliation scan on startup catches any tasks that became due while coordinator was down. |
+| Poison payload | Retried with exponential backoff, then isolated to DLQ after max retries. Coordinator marks execution as `failed`. |
+| Worker heartbeat stops | Coordinator marks worker `offline` after 2 minutes. |
+
+---
+
+## What This Project Demonstrates
+
+- Event-driven distributed orchestration
+- Delayed queue scheduling using RabbitMQ per-message TTL and DLX
+- Idempotent message processing under at-least-once delivery
+- Retry pipelines with exponential backoff and DLQ isolation
+- Reconciliation-based self-healing
+- Worker lifecycle tracking and heartbeat monitoring
+- Per-replica metrics and independent Prometheus scraping
+- Full observability stack: metrics, structured logs, alerting
+- Production deployment on AWS EC2 with Docker Compose

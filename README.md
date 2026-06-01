@@ -25,28 +25,30 @@ A fault-tolerant, distributed cron-as-a-service that schedules one-time and recu
 
 ## Architecture
 
+![Architecture](docs/assets/architecture.png)
+
 ```
                     ┌─────────────────────────────────────────────────────────┐
                     │                  API Gateway (Node.js/TS)               │
                     │  REST CRUD · JWT Auth · Rate Limit · Input Validation   │
                     └───────────────────────────┬─────────────────────────────┘
                                                 │ INSERT task + publish wakeup
-                    ┌───────────────────────────▼───────────────────────────┐
-                    │                      PostgreSQL                       │
-                    │    users · tasks · task_executions · workers          │
-                    └───────┬───────────────────────────────────┬───────────┘
+                    ┌───────────────────────────▼──────────────────────────-─┐
+                    │                      PostgreSQL                        │
+                    │    users · tasks · task_executions · workers           │
+                    └───────┬───────────────────────────────────┬───────────-┘
                             │                                   │
-          ┌─────────────────▼────────────────┐    ┌────────────▼────────────────┐
-          │       Coordinator (Python)       │    │          RabbitMQ           │
-          │  · TTL wakeups → scheduler.due   │───▶│  scheduler.delay            │
-          │  · Dispatch work to workers      │    │  scheduler.due              │
-          │  · Consume results → update DB   │◀───│  scheduler.tasks            │
-          │  · Slow reconciliation (120s)    │    │  scheduler.retry_delay      │
-          │  · Worker heartbeat checker      │    │  scheduler.results          │
-          └──────────────────────────────────┘    │  scheduler.tasks.dlq (DLQ)  │
-                                                  └───────────┬-────────────────┘
-                                                              │ consume
-                    ┌──────────────────────────────────────────▼─────────────--┐
+          ┌─────────────────▼──────────────-──┐    ┌────────────▼────────────────┐
+          │       Coordinator (Python)        │    │          RabbitMQ           │
+          │  · TTL wakeups → scheduler.due    │───▶│  scheduler.delay            │
+          │  · Dispatch work to workers       │    │  scheduler.due              │
+          │  · Consume results → update DB    │◀───│  scheduler.tasks            │
+          │  · Slow reconciliation (120s)     │    │  scheduler.retry_delay      │
+          │  · Worker heartbeat checker       │    │  scheduler.results          │
+          └────────────────────────────────-──┘    │  scheduler.tasks.dlq (DLQ)  │
+                                                   └────────────┬────────────────┘
+                                                                │ consume
+                    ┌───────────────────────────────────────────▼──────────-───┐
                     │           worker-1 │ worker-2 │ worker-3 (Python)        │
                     │  · Register + heartbeat in DB                            │
                     │  · Idempotent execution by executionId                   │
@@ -409,7 +411,7 @@ docker image prune -f
 - [ ] `.env` is in `.gitignore` and never committed
 - [ ] Ports 5432, 5672, 3100 not in security group
 - [ ] Grafana and Prometheus restricted to your IP in security group
-- [ ] `restart: unless-stopped` on all services are already set
+- [ ] `restart: unless-stopped` on all services ✅ already set
 
 ---
 

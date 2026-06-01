@@ -1,331 +1,134 @@
-# Distributed Scheduler Deployment Guide
+# Deployment Guide
 
-## Overview
-
-This guide walks through deploying your distributed scheduler project using:
-
-* Docker Compose
-* A Linux VM (recommended: Ubuntu 22.04)
-* Nginx reverse proxy
-* Domain setup (optional)
-* HTTPS with Let's Encrypt
-* Production environment configuration
-* Basic monitoring
-
-Your stack already includes:
-
-* PostgreSQL
-* RabbitMQ
-* API Gateway
-* Coordinator
-* Worker replicas
-* Prometheus
-* Grafana
-
-This is already a strong infrastructure-style project.
+This documents exactly how the distributed scheduler is deployed — on a single AWS EC2 instance using Docker Compose, Nginx, and the full observability stack.
 
 ---
 
-# Recommended Deployment Architecture
+## Infrastructure
 
-```text
-Internet
-   |
-   v
-Nginx Reverse Proxy
-   |
-   +--> API Gateway (Node.js)
-   +--> Grafana
-
-Docker Network
-   |
-   +--> PostgreSQL
-   +--> RabbitMQ
-   +--> Coordinator
-   +--> Workers
-   +--> Prometheus
-```
+| Resource | Value |
+|----------|-------|
+| Provider | AWS EC2 (ap-south-1) |
+| Instance type | t3 series, Ubuntu 22.04 LTS |
+| Deployment method | Docker Compose |
+| Reverse proxy | Nginx |
+| HTTPS | Let's Encrypt / Certbot (requires a domain) |
 
 ---
 
-# Step 1 — Get a VM
+## What runs on the instance
 
-Recommended providers:
+13 containers, all managed by Docker Compose:
 
-* DigitalOcean
-* Hetzner
-* AWS EC2
-* Azure VM
-* Oracle Cloud Free Tier
-
-Recommended specs:
-
-| Resource | Minimum   |
-| -------- | --------- |
-| CPU      | 2 vCPU    |
-| RAM      | 4 GB      |
-| Storage  | 40 GB SSD |
-
-Ubuntu 22.04 LTS is recommended.
-
----
-
-# Step 2 — SSH Into the VM
-
-```bash
-ssh ubuntu@YOUR_SERVER_IP
-```
+| Container | Ports (host) | Notes |
+|-----------|-------------|-------|
+| `api-gateway` | 3000 | Behind Nginx |
+| `coordinator` | — | Internal only |
+| `worker-1` | 9101 | Metrics |
+| `worker-2` | 9102 | Metrics |
+| `worker-3` | 9103 | Metrics |
+| `postgres` | — (expose only) | Not reachable from host |
+| `rabbitmq` | 15672 | Management UI only |
+| `rabbitmq-exporter` | — (expose only) | Internal |
+| `prometheus` | 9091 | |
+| `alertmanager` | 9093 | |
+| `grafana` | 3001 | |
+| `loki` | — (expose only) | Internal |
+| `promtail` | — | Reads Docker socket |
 
 ---
 
-# Step 3 — Install Docker
+## EC2 Security Group
 
-## Update packages
+| Port | Source | Purpose |
+|------|--------|---------|
+| 22 | Your IP | SSH |
+| 80 | 0.0.0.0/0 | Nginx HTTP |
+| 443 | 0.0.0.0/0 | Nginx HTTPS |
+| 3000 | 0.0.0.0/0 | API Gateway (direct) |
+| 3001 | Your IP | Grafana |
+| 9091 | Your IP | Prometheus |
+| 15672 | Your IP | RabbitMQ Management UI |
+
+Ports **5432**, **5672**, and **3100** are not in the security group — they are internal to the Docker network only.
+
+---
+
+## Initial Setup (run once)
+
+### 1. Install Docker
 
 ```bash
 sudo apt update && sudo apt upgrade -y
-```
-
-## Install Docker
-
-```bash
 curl -fsSL https://get.docker.com | sh
-```
-
-## Add your user to docker group
-
-```bash
 sudo usermod -aG docker $USER
-```
-
-Logout and reconnect:
-
-```bash
-exit
-```
-
-SSH again.
-
----
-
-# Step 4 — Install Docker Compose
-
-Modern Docker includes compose plugin.
-
-Verify:
-
-```bash
+newgrp docker
 docker compose version
 ```
 
----
-
-# Step 5 — Clone Your Repository
-
-```bash
-git clone YOUR_GITHUB_REPO_URL
-cd YOUR_REPO_NAME
-```
-
-Example:
+### 2. Clone the repo
 
 ```bash
 git clone https://github.com/theritikkk/distributed-scheduler.git
 cd distributed-scheduler
 ```
 
----
-
-# Step 6 — Create Production `.env`
-
-Create:
+### 3. Configure environment
 
 ```bash
+cp .env.example .env
 nano .env
 ```
 
-Example:
+Required values to set:
 
 ```env
-POSTGRES_USER=scheduler
-POSTGRES_PASSWORD=VERY_STRONG_PASSWORD
-POSTGRES_DB=distributed_scheduler
+POSTGRES_PASSWORD=<strong password>
+RABBITMQ_DEFAULT_PASS=<strong password>
+JWT_SECRET=<run: openssl rand -hex 32>
+GF_SECURITY_ADMIN_PASSWORD=<strong password>
 
-RABBITMQ_DEFAULT_USER=scheduler
-RABBITMQ_DEFAULT_PASS=VERY_STRONG_PASSWORD
-
-JWT_SECRET=SUPER_LONG_RANDOM_SECRET
-
-DATABASE_URL=postgresql://scheduler:VERY_STRONG_PASSWORD@postgres:5432/distributed_scheduler
-RABBITMQ_URL=amqp://scheduler:VERY_STRONG_PASSWORD@rabbitmq:5672
-
-GF_SECURITY_ADMIN_USER=admin
-GF_SECURITY_ADMIN_PASSWORD=CHANGE_THIS_PASSWORD
+# Update passwords inside these too:
+DATABASE_URL=postgresql://scheduler:<password>@postgres:5432/distributed_scheduler
+RABBITMQ_URL=amqp://scheduler:<password>@rabbitmq:5672
 ```
 
----
-
-# Step 7 — Update Docker Compose for Production
-
-## Remove unnecessary public ports
-
-You should NOT expose internal services publicly.
-
-Keep ONLY:
-
-```yaml
-ports:
-  - "80:80"
-  - "443:443"
-```
-
-through Nginx.
-
----
-
-# Step 8 — Modify Services
-
-## PostgreSQL
-
-Remove:
-
-```yaml
-ports:
-  - "5432:5432"
-```
-
-Use only:
-
-```yaml
-expose:
-  - "5432"
-```
-
----
-
-## RabbitMQ
-
-Keep management UI optional.
-
-Production recommendation:
-
-```yaml
-ports:
-  - "15672:15672"
-```
-
-Do NOT expose 5672 publicly.
-
----
-
-## API Gateway
-
-Keep:
-
-```yaml
-ports:
-  - "3000:3000"
-```
-
-Nginx will reverse proxy to it.
-
----
-
-# Step 9 — Build and Start Services
+### 4. Start everything
 
 ```bash
 docker compose up -d --build
+docker compose ps   # all containers should show Up
 ```
 
-Verify:
-
-```bash
-docker ps
-```
-
----
-
-# Step 10 — Check Logs
-
-## All services
-
-```bash
-docker compose logs -f
-```
-
-## Specific service
-
-```bash
-docker compose logs -f api-gateway
-```
-
-Examples:
-
-```bash
-docker compose logs -f worker
-
-docker compose logs -f coordinator
-```
-
----
-
-# Step 11 — Install Nginx
+### 5. Nginx reverse proxy
 
 ```bash
 sudo apt install nginx -y
-```
 
----
-
-# Step 12 — Configure Reverse Proxy
-
-Create config:
-
-```bash
-sudo nano /etc/nginx/sites-available/distributed-scheduler
-```
-
-Example:
-
-```nginx
+sudo tee /etc/nginx/sites-available/scheduler > /dev/null << 'NGINXEOF'
 server {
     listen 80;
-    server_name YOUR_DOMAIN_OR_IP;
+    server_name _;
 
-    location / {
+    location /api/ {
         proxy_pass http://localhost:3000;
-
         proxy_http_version 1.1;
-
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
         proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
+    location /health {
+        proxy_pass http://localhost:3000;
     }
 }
+NGINXEOF
+
+sudo ln -s /etc/nginx/sites-available/scheduler /etc/nginx/sites-enabled/scheduler
+sudo nginx -t && sudo systemctl restart nginx
 ```
 
-Enable site:
-
-```bash
-sudo ln -s /etc/nginx/sites-available/distributed-scheduler /etc/nginx/sites-enabled/
-```
-
-Test:
-
-```bash
-sudo nginx -t
-```
-
-Restart:
-
-```bash
-sudo systemctl restart nginx
-```
-
----
-
-# Step 13 — Configure Firewall
+### 6. Firewall
 
 ```bash
 sudo ufw allow OpenSSH
@@ -334,264 +137,83 @@ sudo ufw allow 443
 sudo ufw enable
 ```
 
----
-
-# Step 14 — Add HTTPS with Let's Encrypt
-
-Install certbot:
+### 7. HTTPS (requires a domain pointed at the EC2 IP)
 
 ```bash
 sudo apt install certbot python3-certbot-nginx -y
-```
-
-Generate certificate:
-
-```bash
 sudo certbot --nginx -d yourdomain.com
+sudo systemctl status certbot.timer   # verify auto-renewal
 ```
 
-Verify auto renewal:
+> Note: HTTPS requires a real domain with an A record pointing to your EC2 IP. It will not work with a raw IP address. Let's Encrypt failed when run against `yourdomain.com` (placeholder) — replace with your actual domain.
+
+---
+
+## Verify the stack
 
 ```bash
-sudo systemctl status certbot.timer
+# API health
+curl http://YOUR_EC2_IP:3000/health
+# {"status":"ok","service":"api-gateway"}
+
+# All containers running
+docker compose ps
 ```
 
----
+Open in browser:
 
-# Step 15 — Monitoring
-
-## Prometheus
-
-Access:
-
-```text
-http://SERVER_IP:9091
-```
+| Service | URL |
+|---------|-----|
+| Grafana | `http://YOUR_EC2_IP:3001` |
+| Prometheus | `http://YOUR_EC2_IP:9091` |
+| RabbitMQ UI | `http://YOUR_EC2_IP:15672` |
 
 ---
 
-## Grafana
-
-Access:
-
-```text
-http://SERVER_IP:3001
-```
-
-Login:
-
-```text
-admin
-YOUR_PASSWORD
-```
-
----
-
-# Step 16 — Production Improvements
-
-## Add restart policy
-
-Already good:
-
-```yaml
-restart: unless-stopped
-```
-
----
-
-## Add resource limits
-
-Already excellent.
-
-This is good engineering practice.
-
----
-
-## Add health checks
-
-Already implemented well.
-
----
-
-## Add centralized logging later
-
-Future improvements:
-
-* Loki
-* ELK Stack
-* OpenSearch
-
----
-
-# Step 17 — Deployment Workflow
-
-## Update code
+## Updating the deployment
 
 ```bash
+cd distributed-scheduler
 git pull
-```
-
-## Rebuild
-
-```bash
 docker compose up -d --build
-```
-
-## Remove unused images
-
-```bash
 docker image prune -f
 ```
 
 ---
 
-# Step 18 — Debugging Commands
-
-## Check containers
+## Useful debugging commands
 
 ```bash
-docker ps
-```
+# Check all containers
+docker compose ps
 
----
+# Tail all logs
+docker compose logs -f
 
-## Check container resource usage
+# Logs for a specific service
+docker compose logs -f worker-1
+docker compose logs -f coordinator
+docker compose logs -f api-gateway
 
-```bash
+# Resource usage
 docker stats
-```
 
----
-
-## Enter a container
-
-```bash
-docker exec -it CONTAINER_NAME sh
-```
-
-Example:
-
-```bash
+# Shell into a container
+docker exec -it worker-1 sh
 docker exec -it distributed-scheduler-postgres-1 sh
 ```
 
 ---
 
-## Check network
+## Security checklist
 
-```bash
-docker network ls
-```
-
----
-
-# Step 19 — Optional Improvements
-
-## CI/CD
-
-You can later add:
-
-* GitHub Actions
-* Docker Hub image publishing
-* Automated deployment pipeline
-
----
-
-## Kubernetes
-
-Future scaling path:
-
-* Kubernetes
-* Helm charts
-* Horizontal autoscaling
-* Service mesh
-
----
-
-# Step 20 — Resume Value
-
-This project demonstrates:
-
-* Distributed systems concepts
-* Async task processing
-* RabbitMQ messaging
-* Worker orchestration
-* Docker orchestration
-* Monitoring stack integration
-* Infrastructure engineering
-* Production deployment understanding
-* Service health management
-* Resource isolation
-
-This is significantly stronger than typical CRUD resume projects.
-
----
-
-# Suggested Next Improvements
-
-## Best next upgrades for your project
-
-### 1. Add Redis
-
-Use cases:
-
-* distributed locks
-* caching
-* rate limiting
-* job deduplication
-* websocket scaling
-
----
-
-### 2. Add OpenTelemetry
-
-For tracing.
-
----
-
-### 3. Add Dead Letter Queues
-
-Important distributed systems feature.
-
----
-
-### 4. Add Retry Policies
-
-Exponential backoff.
-
----
-
-### 5. Add Horizontal Worker Autoscaling
-
-Based on queue depth.
-
----
-
-# Final Recommended Public URLs
-
-| Service     | URL                                                              |
-| ----------- | ---------------------------------------------------------------- |
-| API         | [https://api.yourdomain.com](https://api.yourdomain.com)         |
-| Grafana     | [https://grafana.yourdomain.com](https://grafana.yourdomain.com) |
-| Prometheus  | Internal only                                                    |
-| RabbitMQ UI | Internal only                                                    |
-
----
-
-# Important Security Notes
-
-Never:
-
-* commit `.env`
-* expose PostgreSQL publicly
-* expose RabbitMQ publicly
-* use default passwords
-* expose Grafana without auth
-
-Always:
-
-* use HTTPS
-* rotate secrets
-* update containers regularly
-* monitor logs
-* backup databases
+- [x] All passwords changed from `.env.example` defaults
+- [x] `JWT_SECRET` generated with `openssl rand -hex 32`
+- [x] `.env` in `.gitignore`, never committed
+- [x] PostgreSQL not exposed publicly (`expose:` not `ports:`)
+- [x] RabbitMQ AMQP port (5672) not exposed publicly
+- [x] Loki (3100) not exposed publicly
+- [x] Grafana login enabled, sign-up disabled
+- [x] `restart: unless-stopped` on all services
+- [ ] HTTPS enabled (requires a domain)
+- [ ] Grafana and Prometheus restricted to your IP in security group
