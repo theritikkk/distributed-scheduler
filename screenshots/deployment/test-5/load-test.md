@@ -47,7 +47,7 @@ done
 - Worker drain rate across 3 replicas once TTL expires
 - PostgreSQL write throughput and data integrity throughout
 
-![Benchmark script running on EC2](test-5/14-benchmark-script.png)
+![Benchmark script running on EC2](./14-benchmark-script.png)
 
 ---
 
@@ -65,7 +65,7 @@ Every scrape target was in a healthy state before load was applied:
 - `rabbitmq` — 1/1 UP
 - `worker` — **3/3 UP** (worker-1, worker-2, worker-3 individually reachable)
 
-![Prometheus targets all UP](test-5/02-prometheus-targets.png)
+![Prometheus targets all UP](./02-prometheus-targets.png)
 
 ### Grafana — baseline state
 
@@ -75,7 +75,7 @@ Every scrape target was in a healthy state before load was applied:
 - Task Throughput: flat
 - p95 Latency: no data yet
 
-![Grafana baseline before load test](test-5/03-grafana-baseline-a.png)
+![Grafana baseline before load test](./03-grafana-baseline-a.png)
 
 ---
 
@@ -89,13 +89,13 @@ The benchmark loop submits 10,000 tasks to the API over approximately 60–90 se
 
 The queue depth grew linearly as tasks were submitted, reaching a peak of **8,562 messages** at publish rates of 59–74/s.
 
-![RabbitMQ: 1,057 messages — early submission](test-5/01-rabbitmq-1057.png)
+![RabbitMQ: 1,057 messages — early submission](./01-rabbitmq-1057.png)
 
-![RabbitMQ: 3,603 messages — mid submission, 74/s publish](test-5/05-rabbitmq-3603.png)
+![RabbitMQ: 3,603 messages — mid submission, 74/s publish](./05-rabbitmq-3603.png)
 
-![RabbitMQ: 7,094 messages — approaching peak](test-5/07-rabbitmq-7094.png)
+![RabbitMQ: 7,094 messages — approaching peak](./07-rabbitmq-7094.png)
 
-![RabbitMQ: 8,562 messages — peak queue depth](test-5/09-rabbitmq-8562-peak.png)
+![RabbitMQ: 8,562 messages — peak queue depth](./09-rabbitmq-8562-peak.png)
 
 ---
 
@@ -114,13 +114,13 @@ The Grafana dashboard shows the exact moment the TTL burst hit:
 - Queue Depth (tasks being dispatched) shows a brief spike then drops as workers consume
 - DLQ Depth: **0** throughout — no poison messages
 
-![Grafana: TTL burst hitting the coordinator](test-5/10-grafana-coordinator-activating.png)
+![Grafana: TTL burst hitting the coordinator](./10-grafana-coordinator-activating.png)
 
 ### RabbitMQ — dispatch spike visible in message rates
 
 The message rate graph shows the sharp burst of 1,500+/s at the TTL expiry moment, followed by a sustained ~60/s consumer ack rate as workers process the backlog.
 
-![RabbitMQ: 8,338 messages, workers consuming at 50/s](test-5/12-rabbitmq-8338-draining.png)
+![RabbitMQ: 8,338 messages, workers consuming at 50/s](./12-rabbitmq-8338-draining.png)
 
 ---
 
@@ -135,19 +135,19 @@ Workers consumed from `scheduler.tasks`, executed commands, and published result
 - **DLQ Depth**: **0** throughout the entire drain — no tasks failed permanently
 - **Coordinator Activity**: peaked at ~20 results/s, plateaued at ~15/s during steady drain
 
-![Grafana: throughput rising, p95 settling at ~80ms](test-5/11-grafana-throughput-latency.png)
+![Grafana: throughput rising, p95 settling at ~80ms](./11-grafana-throughput-latency.png)
 
-![Grafana: sustained throughput plateau, DLQ=0](test-5/17-grafana-plateau.png)
+![Grafana: sustained throughput plateau, DLQ=0](./17-grafana-plateau.png)
 
-![Grafana: full drain view — throughput stable, p95 ~80ms](test-5/20-grafana-final-drain.png)
+![Grafana: full drain view — throughput stable, p95 ~80ms](./20-grafana-final-drain.png)
 
 ### RabbitMQ — queue draining
 
 Queue depth fell from 8,500 → 7,784 → 7,094 → 6,341 as workers processed at 50–60/s.
 
-![RabbitMQ: 7,784 messages — drain in progress](test-5/16-rabbitmq-7784-draining.png)
+![RabbitMQ: 7,784 messages — drain in progress](./16-rabbitmq-7784-draining.png)
 
-![RabbitMQ: 6,341 messages — continued drain](test-5/18-rabbitmq-6341.png)
+![RabbitMQ: 6,341 messages — continued drain](./18-rabbitmq-6341.png)
 
 ---
 
@@ -164,9 +164,9 @@ PostgreSQL row counts were queried at multiple points during the test to verify 
 
 Every row represents a task that was dispatched, executed, and had its result written back. **8,137 out of 10,000 tasks completed within the observation window** — the remaining tasks were still being processed as the PostgreSQL queries were run.
 
-![PostgreSQL: 4,472 rows mid-test](test-5/06-postgres-4472-rows.png)
+![PostgreSQL: 4,472 rows mid-test](./06-postgres-4472-rows.png)
 
-![PostgreSQL: 8,137 rows — final count](test-5/13-postgres-8137-rows.png)
+![PostgreSQL: 8,137 rows — final count](./13-postgres-8137-rows.png)
 
 ---
 
@@ -228,7 +228,7 @@ The RabbitMQ queue count decreased steadily and predictably across the entire dr
 | 15:00:29 | 2,527 | 2,389 | 61/s |
 | 15:00:56 | 1,949 | 1,950 | 52/s |
 
-![RabbitMQ: 4,931 messages — continued drain](test-5/21-rabbitmq-4931.png)
+![RabbitMQ: 4,931 messages — continued drain](./21-rabbitmq-4931.png)
 
 ### All 6 RabbitMQ queues — live during drain
 
@@ -243,39 +243,39 @@ The Queues and Streams tab shows all 6 queues in operation simultaneously:
 
 This screenshot proves the complete queue topology is operational and the DLQ remained empty throughout the entire test.
 
-![RabbitMQ: all 6 queues active, DLQ=0](test-5/22-rabbitmq-all-6-queues.png)
+![RabbitMQ: all 6 queues active, DLQ=0](./22-rabbitmq-all-6-queues.png)
 
 ### Grafana — throughput plateau and latency improvement
 
 As the backlog drained, p95 latency continued to improve, falling from the initial burst peak of 160ms down toward 77ms. This is the expected behaviour — at burst moment the coordinator queue is fully saturated, causing slight latency increase; as backlog reduces, per-task latency improves.
 
-![Grafana: throughput ~6/s, p95 dropping to ~80ms](test-5/23-grafana-draining-plateau.png)
+![Grafana: throughput ~6/s, p95 dropping to ~80ms](./23-grafana-draining-plateau.png)
 
-![Grafana: sustained drain, DLQ=0, Queue Depth=3](test-5/25-grafana-sustained.png)
+![Grafana: sustained drain, DLQ=0, Queue Depth=3](./25-grafana-sustained.png)
 
 ### Prometheus — targets remained UP throughout drain
 
 Prometheus confirmed all scrape targets remained healthy throughout the entire drain phase. Workers never missed a heartbeat, coordinator never dropped, rabbitmq-exporter never went down.
 
-![Prometheus: all targets UP during drain](test-5/27-prometheus-during-drain.png)
+![Prometheus: all targets UP during drain](./27-prometheus-during-drain.png)
 
-![Prometheus: worker 3/3 UP, all targets healthy](test-5/31-prometheus-still-up.png)
+![Prometheus: worker 3/3 UP, all targets healthy](./31-prometheus-still-up.png)
 
 ### PostgreSQL — monotonic row count increase
 
 PostgreSQL row counts increased monotonically throughout, with no gaps or inconsistencies. The rate of increase matched the worker ack rate, confirming that every acknowledged task was written back to the database.
 
-![PostgreSQL: 4,390 rows](test-5/24-postgres-4390.png)
+![PostgreSQL: 4,390 rows](./24-postgres-4390.png)
 
-![PostgreSQL: 3,225 rows](test-5/29-postgres-3225.png)
+![PostgreSQL: 3,225 rows](./29-postgres-3225.png)
 
-![PostgreSQL: 2,682 rows](test-5/33-postgres-2682.png)
+![PostgreSQL: 2,682 rows](./33-postgres-2682.png)
 
-![PostgreSQL: 2,505 rows](test-5/34-postgres-2505.png)
+![PostgreSQL: 2,505 rows](./34-postgres-2505.png)
 
-![PostgreSQL: 2,389 rows](test-5/35-postgres-2389.png)
+![PostgreSQL: 2,389 rows](./35-postgres-2389.png)
 
-![PostgreSQL: 1,950 rows](test-5/37-postgres-1950.png)
+![PostgreSQL: 1,950 rows](./37-postgres-1950.png)
 
 ---
 
@@ -287,7 +287,7 @@ The most significant metric in this phase: **p95 latency dropped to ~77ms** — 
 
 Task Throughput held flat at 5.6–5.8 acks/s. Coordinator Activity maintained ~18–19 results/s. DLQ remained at **0**.
 
-![Grafana: steady state — p95 ~77ms, throughput ~5.7/s](test-5/39-grafana-steady-state.png)
+![Grafana: steady state — p95 ~77ms, throughput ~5.7/s](./39-grafana-steady-state.png)
 
 ### Grafana — full run panoramic view
 
@@ -298,7 +298,7 @@ This screenshot shows the complete run in a single view, from the start of drain
 - **Task Latency p95**: declining curve from ~90ms → ~77ms as backlog reduces
 - **Coordinator Activity**: stable band at ~18–19 results/s
 
-![Grafana: full drain run from 14:57 to 15:01](test-5/40-grafana-full-run-panoramic.png)
+![Grafana: full drain run from 14:57 to 15:01](./40-grafana-full-run-panoramic.png)
 
 This is the clearest single view of what the system did: absorbed a burst of 8,500+ tasks, processed them steadily at ~6 tasks/s across 3 workers, with latency improving as the queue drained, and zero DLQ messages the entire time.
 
