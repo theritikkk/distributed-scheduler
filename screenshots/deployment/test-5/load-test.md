@@ -62,7 +62,7 @@ All services confirmed healthy before any load was applied.
 | worker | **3/3 UP** |
 
 ![Prometheus: api-gateway, coordinator, prometheus, rabbitmq all UP](./02-prometheus-targets.png)
-![Prometheus: worker-1, worker-2, worker-3 all UP independently](./31-prometheus-workers-up.png)
+![Prometheus: worker-1, worker-2, worker-3 all UP independently](./31-prometheus-still-up.png)
 
 ### Grafana — clean baseline
 
@@ -105,7 +105,7 @@ At T+2 minutes, all TTL messages expired **simultaneously**. RabbitMQ dead-lette
 
 Message rate spiked to **~1,600/s** at TTL expiry, then settled to a sustained 50–61/s consumer ack rate.
 
-![RabbitMQ: 8,338 messages — 1,600/s burst spike visible in message rates](./12-rabbitmq-8338-burst.png)
+![RabbitMQ: 8,338 messages — 1,600/s burst spike visible in message rates](./12-rabbitmq-8338-draining.png)
 
 ### The burst in Grafana
 
@@ -115,7 +115,7 @@ Message rate spiked to **~1,600/s** at TTL expiry, then settled to a sustained 5
 - DLQ Depth: **0** throughout
 
 ![Grafana: coordinator activating — TTL burst at 14:55](./10-grafana-coordinator-activating.png)
-![Grafana: throughput beginning to rise, p95 spike](./11-grafana-throughput-rising.png)
+![Grafana: throughput beginning to rise, p95 spike](./11-grafana-throughput-latency.png)
 
 ### All 6 RabbitMQ queues active simultaneously
 
@@ -153,14 +153,14 @@ Workers consumed tasks at 50–61/s, executed commands, and published results. T
 | 15:02:06 | 693 | 54/s |
 | **15:02:46** | **0** | — |
 
-![RabbitMQ: 7,784 messages — drain underway, 60/s](./16-rabbitmq-7784.png)
+![RabbitMQ: 7,784 messages — drain underway, 60/s](./16-rabbitmq-7784-draining.png)
 ![RabbitMQ: 6,341 messages — continued drain, 53/s](./18-rabbitmq-6341.png)
 ![RabbitMQ: 4,931 messages — mid drain, 60/s](./21-rabbitmq-4931.png)
 ![RabbitMQ: 4,151 messages — 53/s consumer](./26-rabbitmq-4151.png)
 ![RabbitMQ: 3,464 messages — 52/s consumer](./28-rabbitmq-3464.png)
-![RabbitMQ: 2,893 messages — 51/s consumer](./32-rabbitmq-2893.png)
-![RabbitMQ: 2,527 messages — 61/s consumer](./36-rabbitmq-2527.png)
-![RabbitMQ: 1,949 messages — 52/s consumer](./38-rabbitmq-1949.png)
+![RabbitMQ: 2,893 messages — 51/s consumer](./32-rabbitmq-draning-2893.png)
+![RabbitMQ: 2,527 messages — 61/s consumer](./36-rabbitmq-draning-2527.png)
+![RabbitMQ: 1,949 messages — 52/s consumer](./38-rabbitmq-draning-1949.png)
 ![RabbitMQ: 693 messages — final approach, 54/s](./41-rabbitmq-693.png)
 
 ### Grafana — throughput and latency throughout drain
@@ -168,11 +168,11 @@ Workers consumed tasks at 50–61/s, executed commands, and published results. T
 The key latency story: p95 started at 160ms at burst, then declined continuously as the backlog shrank, reaching **~76ms** at the end of drain. Workers themselves complete commands in under 10ms — the latency is dominated by queue wait time, which naturally decreases as the queue empties.
 
 ![Grafana: throughput plateau ~6/s, p95 ~80ms, DLQ=0](./17-grafana-plateau.png)
-![Grafana: throughput and latency — drain phase 14:54–14:58:30](./23-grafana-drain-phase.png)
+![Grafana: throughput and latency — drain phase 14:54–14:58:30](./23-grafana-draining-plateau.png)
 ![Grafana: sustained drain — DLQ=0, Queue Depth=3, p95 declining](./25-grafana-sustained.png)
-![Grafana: p95 ~80ms, Coordinator Activity ~15/s, throughput stable](./30-grafana-mid-drain.png)
+![Grafana: p95 ~80ms, Coordinator Activity ~15/s, throughput stable](./30-grafana-dashboard.png)
 ![Grafana: steady state — p95 declining to ~77ms](./39-grafana-steady-state.png)
-![Grafana: p95 ~77–78ms, throughput 5.6–5.8/s, Coordinator ~19/s](./40-grafana-late-drain.png)
+![Grafana: p95 ~77–78ms, throughput 5.6–5.8/s, Coordinator ~19/s](./40-grafana-full-run-panoramic.png)
 ![Grafana: p95 reaching floor ~76ms, throughput stable](./43-grafana-5min-drain.png)
 ![Grafana: 5-min window — drain curve, p95 76ms, Coordinator 18–19/s](./45-grafana-5min-window.png)
 
@@ -205,8 +205,8 @@ Row counts sampled continuously throughout. Every row = one task that completed 
 
 The row and message counts converge to near 1:1 by 15:00:56 — confirming every consumed message produced exactly one PostgreSQL write.
 
-![PostgreSQL: 4,472 rows mid-drain](./06-postgres-4472.png)
-![PostgreSQL: 7,712 rows — late drain](./15-postgres-7712.png)
+![PostgreSQL: 4,472 rows mid-drain](./06-postgres-4472-rows.png)
+![PostgreSQL: 7,712 rows — late drain](./15-postgres-7712-rows.png)
 ![PostgreSQL: 6,079 rows](./19-postgres-6079.png)
 ![PostgreSQL: 4,390 rows](./24-postgres-4390.png)
 ![PostgreSQL: 3,225 rows](./29-postgres-3225.png)
@@ -214,7 +214,7 @@ The row and message counts converge to near 1:1 by 15:00:56 — confirming every
 ![PostgreSQL: 2,505 rows](./34-postgres-2505.png)
 ![PostgreSQL: 2,389 rows](./35-postgres-2389.png)
 ![PostgreSQL: 1,950 rows](./37-postgres-1950.png)
-![PostgreSQL: 8,137 rows — near end of drain](./13-postgres-8137.png)
+![PostgreSQL: 8,137 rows — near end of drain](./13-postgres-8137-rows.png)
 ![PostgreSQL: 415 rows — final approach](./42-postgres-415.png)
 
 ---
@@ -257,7 +257,7 @@ When the last task was processed, throughput dropped cleanly to 0. Workers had n
 All 3 workers independently scraped every 15s for the entire duration. Coordinator never dropped. No target went DOWN at any point.
 
 ![Prometheus: all targets UP during drain — api-gateway, coordinator, rabbitmq](./27-prometheus-during-drain.png)
-![Prometheus: worker 3/3 UP — all scraped independently](./11b-prometheus-workers.png)
+![Prometheus: worker 3/3 UP — all scraped independently](./11-grafana-throughput-latency.png)
 
 ---
 
