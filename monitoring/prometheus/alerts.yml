@@ -2,6 +2,16 @@ groups:
   - name: distributed-scheduler
     interval: 30s
     rules:
+      # A scrape target disappeared or failed its health check
+      - alert: ServiceTargetDown
+        expr: up{job=~"api-gateway|coordinator|worker"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service target is down"
+          description: "Prometheus cannot scrape {{ $labels.job }} at {{ $labels.instance }}."
+
       # Queue backlog: workers cannot keep up
       - alert: TaskQueueBacklogHigh
         expr: |
@@ -45,12 +55,13 @@ groups:
         expr: |
           sum(scheduler_worker_consumer_up) > 0
           and sum(rate(scheduler_worker_tasks_acked_total[5m])) == 0
+          and max(scheduler_queue_depth{queue="scheduler.tasks"}) > 0
         for: 3m
         labels:
           severity: warning
         annotations:
-          summary: "Worker ack rate is zero"
-          description: "Consumers are up but no tasks acked in 5m — possible deadlock or blocking execution."
+          summary: "Worker ack rate is zero with queued work"
+          description: "Consumers are up and scheduler.tasks has queued messages, but no tasks were acked in 5m — possible deadlock or blocking execution."
 
       # High retry rate
       - alert: HighTaskRetryRate
@@ -71,3 +82,489 @@ groups:
         annotations:
           summary: "Tasks entering DLQ"
           description: "Poison messages are being produced after max retries."
+
+      # Dispatch is consistently later than the configured jitter window
+      - alert: TaskScheduleLagHigh
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (rate(scheduler_task_schedule_lag_seconds_bucket[10m]))
+          ) > 600
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Task schedule lag is high"
+          description: "p95 schedule lag is above 10m; check coordinator throughput and queue backlog."
+
+      # Duplicate slot conflicts can indicate duplicate wakeups or clock issues
+      - alert: TaskSlotConflicts
+        expr: increase(scheduler_task_slot_conflicts_total[10m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Duplicate execution-slot insert attempts"
+          description: "The unique (task_id, scheduled_for) slot guard rejected duplicate dispatches."
+
+      # Recurring tasks are skipping far more slots than expected
+      - alert: TaskNextRunDriftHigh
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (rate(scheduler_task_next_run_drift_seconds_bucket[10m]))
+          ) > 60
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Recurring task cadence drift is high"
+          description: "Recurring schedules are skipping slots; check coordinator availability and long-running executions."
+
+      # Workers are dying or losing leases faster than normal
+      - alert: ExecutionLeaseReapRateHigh
+        expr: |
+          sum(increase(scheduler_coordinator_executions_reaped_total{action="requeue"}[15m])) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Execution leases are being reaped frequently"
+          description: "The coordinator reaper is recovering executions after lease expiry or lost retries. Check worker restarts and database/broker latency."
+
+      # Old workers are still publishing results after losing ownership
+      - alert: StaleLeaseResultsRejected
+        expr: |
+          sum(increase(scheduler_coordinator_results_rejected_stale_lease_total[10m])) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Results rejected due to stale execution leases"
+          description: "A worker completed after its lease was reaped or stolen. Verify worker clock/skew, lease heartbeat health, and long-running commands."
+
+      # Transactional outbox backlog: relay is down or cannot keep up
+      - alert: OutboxPendingBacklogHigh
+        expr: scheduler_outbox_pending_rows > 500
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Transactional outbox backlog is high"
+          description: "{{ $value }} events are unpublished. Check the outbox relay, RabbitMQ confirms, and database latency."
+
+      # Oldest pending outbox event is not being drained
+      - alert: OutboxRelayLagHigh
+        expr: scheduler_outbox_lag_seconds > 120
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Outbox relay lag is high"
+          description: "The oldest unpublished outbox event is {{ $value }}s old; committed state changes cannot reach workers."
+
+      # Events exhausted their publish attempts
+      - alert: OutboxEventsFailed
+        expr: increase(scheduler_outbox_failed_total[10m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Outbox events moved to terminal failed"
+          description: "One or more events could not be published after max attempts. Inspect outbox.last_error and the routing topology."
+
+      # Phase 6: DB-backed timers are due but not reaching RabbitMQ
+      - alert: ScheduledEventsLagHigh
+        expr: scheduler_scheduled_events_lag_seconds > 60
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "DB-backed timer poller is behind"
+          description: "The oldest due scheduled event is {{ $value }}s overdue. Check the poller, RabbitMQ confirms, and backpressure state."
+
+      - alert: ScheduledEventsFailed
+        expr: scheduler_scheduled_events_failed > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "DB-backed timers exhausted publish attempts"
+          description: "One or more scheduled_events rows are terminal failed. Inspect last_error; reconciliation/reaper are safety nets, not a substitute for fixing the timer path."
+
+      - alert: ScheduledEventsPendingBacklogHigh
+        expr: scheduler_scheduled_events_pending > 50000
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Large number of pending DB timers"
+          description: "{{ $value }} wakeups/retries are pending. Check timer drain rate, outbox materialization, and Redis/broker health."
+
+      # Phase 4: Redis rate limiting is degraded and local buckets are in use
+      - alert: RateLimitFallbackActive
+        expr: max by(scope) (scheduler_ratelimit_fallback_active) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Rate limiting is using the local fallback ({{ $labels.scope }})"
+          description: "Redis is unavailable or slow; each API replica is enforcing its own conservative bucket. Check Redis health and scheduler_ratelimit_redis_errors_total."
+
+      - alert: RateLimitCircuitOpen
+        expr: max(scheduler_ratelimit_circuit_state{state="open"}) > 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Rate-limit Redis circuit breaker is open"
+          description: "Repeated Redis failures opened the circuit. Requests are using the local fallback and will probe Redis after the cool-down."
+
+      - alert: AdmissionRejectionsHigh
+        expr: sum(rate(scheduler_admission_rejected_total[5m])) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Admission control is rejecting sustained traffic"
+          description: "Requests are being rejected with 429/503 due to DB pool or queue-depth pressure. Scale workers/DB or reduce ingress."
+
+      - alert: DbPoolSaturation
+        expr: max(scheduler_db_pool_utilization) > 0.85
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Database pool/utilization gate is saturated"
+          description: "DB connection utilization is above 85%. Check slow queries, connection leaks, and pool sizing."
+
+      # Phase 5: coordinator queue/database backpressure
+      - alert: CoordinatorBackpressurePaused
+        expr: max(scheduler_backpressure_state{state="paused"}) > 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Coordinator is paused by backpressure"
+          description: "The coordinator has stopped fetching work for 10m. Check scheduler.tasks/scheduler.results depth and DB utilization."
+
+      - alert: CoordinatorBackpressureUnknown
+        expr: max(scheduler_backpressure_state{state="unknown"}) > 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Coordinator backpressure signals are stale"
+          description: "The queue-depth monitor or DB gate has not produced fresh samples. In enforce mode, dispatch and results are paused."
+
+      - alert: CoordinatorConsumerReconnects
+        expr: sum(increase(scheduler_consumer_reconnects_total[10m])) > 3
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Coordinator consumers are reconnecting repeatedly"
+          description: "RabbitMQ connections are unstable. Check broker health, network, and consumer error logs."
+
+      - alert: DueQueueBacklogHigh
+        expr: max(scheduler_queue_depth{queue="scheduler.due"}) > 500
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Due queue backlog is high"
+          description: "scheduler.due has {{ $value }} ready messages; dispatch is slower than schedule arrivals."
+
+      # Phase 6 hardening: broker resource alarms and partition state
+      - alert: RabbitMQMemoryAlarm
+        expr: rabbitmq_alarms_memory_used_watermark == 1
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "RabbitMQ memory high-watermark alarm is active"
+          description: "The broker is blocking publishers because memory use crossed the configured watermark. Scale memory, reduce backlog, or lower publisher rate."
+
+      - alert: RabbitMQDiskAlarm
+        expr: rabbitmq_alarms_free_disk_space_watermark == 1
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "RabbitMQ free-disk alarm is active"
+          description: "Free disk is below disk_free_limit.absolute (2GB) and publishers are blocked. Free space before quorum queues fill the data volume."
+
+      - alert: RabbitMQPartitionDetected
+        expr: rabbitmq_alarms_partition == 1
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "RabbitMQ reports a network partition"
+          description: "A broker sees a partition. With cluster_partition_handling=pause_minority the minority side pauses; restore connectivity and verify quorum queue members before resuming traffic."
+
+      - alert: RabbitMQQueueConsumersMissing
+        expr: |
+          rabbitmq_queue_consumers{queue=~"scheduler.tasks|scheduler.due|scheduler.results"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "No consumers on {{ $labels.queue }}"
+          description: "A quorum queue has zero consumers for 5m. Check worker/coordinator connectivity, broker health, and whether the queue is paused by a partition or alarm."
+
+      - alert: RabbitMQUnackedMessagesHigh
+        expr: |
+          rabbitmq_queue_messages_unacknowledged{queue="scheduler.tasks"} > 100
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Many unacknowledged task messages"
+          description: "Workers are holding {{ $value }} unacked messages. Check for stuck commands, lease heartbeat failures, and consumer_timeout closures."
+
+      # Phase 6 hardening: Patroni / HAProxy / PgBouncer / Redis.
+      # These selectors require topology="ha", which deploy.sh attaches to the
+      # HA target files. The single-node Compose stack never matches them.
+      - alert: HAInfrastructureTargetDown
+        expr: up{job=~"patroni|haproxy|pgbouncer|redis",topology="ha"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "HA infrastructure target is down"
+          description: "Prometheus cannot scrape {{ $labels.job }} at {{ $labels.instance }}."
+
+      - alert: PatroniNoPrimary
+        expr: max(patroni_primary{topology="ha"}) == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Patroni reports no primary"
+          description: "No Patroni member holds the leader role. Writes through HAProxy fail until a new leader is elected."
+
+      - alert: PatroniPostgresDown
+        expr: min(patroni_postgres_running{topology="ha"}) == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "A Patroni PostgreSQL member is down"
+          description: "At least one Patroni member reports PostgreSQL not running. Check Patroni logs and the data volume."
+
+      - alert: PatroniClusterUnlocked
+        expr: max(patroni_cluster_unlocked{topology="ha"}) == 1
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Patroni cluster is unlocked"
+          description: "Patroni cannot hold the DCS leader lock. Check etcd quorum and network connectivity; failover is not possible while unlocked."
+
+      - alert: PatroniReplicationLagHigh
+        expr: |
+          max(patroni_xlog_location{topology="ha"})
+          - min(patroni_xlog_replayed_location{topology="ha"} > 0)
+          > 64 * 1024 * 1024
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Patroni replica replay lag exceeds 64 MiB"
+          description: "At least one replica is more than 64 MiB behind the leader's WAL location. Check network, disk, and replica health."
+
+      - alert: PatroniSyncStandbyMissing
+        expr: |
+          max(patroni_primary{topology="ha"}) == 1
+          and sum(patroni_sync_standby{topology="ha"}) == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Synchronous standby is missing"
+          description: "The primary has no synchronous standby, so RPO is no longer zero. Check replica health and synchronous_mode."
+
+      - alert: PatroniArchiveRecovery
+        expr: max(patroni_postgres_in_archive_recovery{topology="ha"}) == 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "A Patroni member is replaying from archive"
+          description: "A replica is in archive recovery instead of streaming. Check replication slots, network, and the restore/PITR path."
+
+      - alert: PatroniDcsUnreachable
+        expr: time() - max(patroni_dcs_last_seen{topology="ha"}) > 60
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Patroni cannot reach the DCS"
+          description: "Patroni has not contacted etcd for more than 60 seconds. Check the etcd quorum and the network path."
+
+      - alert: HAProxyBackendDown
+        expr: |
+          haproxy_backend_up{
+            proxy=~"pg_primary_back|pg_replica_back|api_back|rabbitmq_back",
+            topology="ha"
+          } == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "HAProxy backend {{ $labels.proxy }} has no healthy servers"
+          description: "HAProxy reports no healthy server for {{ $labels.proxy }}. Check the Patroni/RabbitMQ/API health checks."
+
+      - alert: PgBouncerClientsWaiting
+        expr: |
+          max by (database) (
+            pgbouncer_pools_client_waiting_connections{topology="ha"}
+          ) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PgBouncer clients are waiting for a server"
+          description: "{{ $value }} clients are waiting for a PgBouncer server connection. Check PostgreSQL saturation and pool sizing."
+
+      - alert: PgBouncerPoolSaturated
+        expr: |
+          max by (database) (
+            pgbouncer_pools_server_active_connections{topology="ha"}
+          ) > 0
+          and on (database)
+          max by (database) (
+            pgbouncer_pools_server_idle_connections{topology="ha"}
+          ) == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PgBouncer pool is saturated ({{ $labels.database }})"
+          description: "All PgBouncer server connections are in use. Clients will wait; check DB latency and pool sizing."
+
+      - alert: PgBouncerMaxWaitHigh
+        expr: |
+          max by (database) (
+            pgbouncer_pools_client_maxwait_seconds{topology="ha"}
+          ) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PgBouncer client wait exceeds 5s"
+          description: "The oldest unserved client has waited {{ $value }}s. Check pool saturation and PostgreSQL health."
+
+      - alert: RedisNodeDown
+        expr: redis_up{topology="ha"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis node is unreachable"
+          description: "Prometheus cannot query Redis at {{ $labels.instance }}. Rate limiting will use the local fallback."
+
+      - alert: RedisReplicaLinkDown
+        expr: min(redis_master_link_up{topology="ha"}) == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "A Redis replica is not linked to its master"
+          description: "At least one Redis replica reports master_link_up=0. Sentinel failover capacity is reduced."
+
+      - alert: RedisMasterHasNoReplicas
+        expr: max(redis_connected_slaves{topology="ha"}) < 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redis master has fewer than two replicas"
+          description: "The elected master reports {{ $value }} connected replicas. Check Sentinel topology and replica health."
+
+      # --- Phase 7: optional Redis cache, tenant quotas, tracing, archival ---
+      - alert: CacheErrorRateHigh
+        expr: sum(rate(scheduler_cache_errors_total[5m])) > 0.1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Scheduler cache operations are failing"
+          description: "Cache errors are above 0.1/s. The API fails open to PostgreSQL, so correctness is preserved but database load may rise. Check Redis health and CACHE_REDIS_TIMEOUT_MS."
+
+      - alert: CacheHitRatioLow
+        expr: |
+          (
+            sum(rate(scheduler_cache_hits_total[10m]))
+            / clamp_min(
+                sum(rate(scheduler_cache_hits_total[10m]))
+                + sum(rate(scheduler_cache_misses_total[10m])),
+                0.001
+              )
+          ) < 0.2
+          and
+          (
+            sum(rate(scheduler_cache_hits_total[10m]))
+            + sum(rate(scheduler_cache_misses_total[10m]))
+          ) > 0.05
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Scheduler cache hit ratio is below 20%"
+          description: "The read cache is serving few requests relative to misses. Check TTLs, key invalidation, and whether traffic is mostly unique reads."
+
+      - alert: TenantQuotaLookupErrors
+        expr: sum(rate(scheduler_tenant_quota_lookup_errors_total[5m])) > 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Tenant quota lookups are failing"
+          description: "The API is falling back to default/local tenant quotas. Task creation remains available, but weighted fairness may be inaccurate. Check PostgreSQL latency and the tenant_quotas table."
+
+      - alert: TenantQuotaDenialsHigh
+        expr: sum(rate(scheduler_ratelimit_denied_total{scope="tenant:tasks"}[5m])) > 1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Tenant task quota denials are elevated"
+          description: "Tenants are being denied task creation at more than 1/s. Confirm this is intentional and review tenant weights, burst settings, or capacity."
+
+      - alert: GlobalIngressShardsMissing
+        expr: scheduler_ratelimit_shards{scope="global:ingress"} < 1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Global ingress limiter has no shards"
+          description: "scheduler_ratelimit_shards is below 1 for the global ingress limiter. Check GLOBAL_INGRESS_SHARDS and API startup logs."
+
+      - alert: TraceExportErrors
+        expr: sum(rate(scheduler_trace_export_errors_total[5m])) > 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "OpenTelemetry trace export is failing"
+          description: "The API cannot export spans to the OTLP endpoint. Requests continue normally; check the collector endpoint and OTEL_EXPORTER_OTLP_ENDPOINT."
+
+      - alert: ArchiveErrors
+        expr: increase(scheduler_archive_errors_total[1h]) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Scheduler archival cycle failed"
+          description: "At least one coordinator archival cycle failed in the last hour. Live tables will grow until archival succeeds. Check PostgreSQL locks, disk, and coordinator logs."
+
+      - alert: ArchiveLagHigh
+        expr: max(scheduler_archive_oldest_row_age_seconds) > 90 * 24 * 3600
+        for: 6h
+        labels:
+          severity: warning
+        annotations:
+          summary: "Old terminal history remains in a live table"
+          description: "The oldest terminal row is more than 90 days old while archival is expected to run. Check ARCHIVE_ENABLED, retention, and coordinator archive logs."

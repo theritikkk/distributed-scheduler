@@ -31,6 +31,13 @@ scrape_configs:
           - 'worker-1:9100'
           - 'worker-2:9100'
           - 'worker-3:9100'
+          - 'worker-4:9100'
+          - 'worker-5:9100'
+          - 'worker-6:9100'
+          - 'worker-7:9100'
+          - 'worker-8:9100'
+          - 'worker-9:9100'
+          - 'worker-10:9100'
     metrics_path: /metrics
 
   - job_name: rabbitmq
