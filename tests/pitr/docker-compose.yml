@@ -1,0 +1,52 @@
+name: scheduler-pitr-test
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_secret
+      POSTGRES_DB: pitr_test
+    command:
+      - postgres
+      - -c
+      - wal_level=replica
+      - -c
+      - archive_mode=on
+      - -c
+      - archive_command=test ! -f /backup/archive/%f && cp %p /backup/archive/%f
+      - -c
+      - archive_timeout=1
+      - -c
+      - max_wal_senders=10
+    ports:
+      - "55433:5432"
+    volumes:
+      - pitr_primary_data:/var/lib/postgresql/data
+      - pitr_backup:/backup
+      - ./postgres-init.sql:/docker-entrypoint-initdb.d/10-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d pitr_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  # Started explicitly with `docker compose run` by run.sh. It copies the base
+  # backup into the container's fresh PGDATA, configures recovery, and runs
+  # PostgreSQL until it promotes at RECOVERY_TARGET.
+  restore:
+    image: postgres:16-alpine
+    profiles: ["restore"]
+    environment:
+      PGDATA: /var/lib/postgresql/data
+      RECOVERY_TARGET: ""
+    entrypoint: ["/usr/local/bin/pitr-restore.sh"]
+    ports:
+      - "55434:5432"
+    volumes:
+      - pitr_backup:/backup:ro
+      - ./restore-entrypoint.sh:/usr/local/bin/pitr-restore.sh:ro
+
+volumes:
+  pitr_primary_data:
+  pitr_backup:

@@ -1,0 +1,2 @@
+"scheduler" "scheduler_secret"
+"postgres" "postgres_secret"

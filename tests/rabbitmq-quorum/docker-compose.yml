@@ -1,0 +1,68 @@
+name: scheduler-rabbitmq-quorum
+
+# Three independent RabbitMQ nodes joined into one cluster by run.sh.
+# The broker config comes from deploy/ha-lab/ha/rabbitmq.conf.tmpl so the
+# partition drill exercises the same pause_minority and alarm settings as the
+# HA lab.
+
+x-rabbitmq: &rabbitmq
+  image: rabbitmq:3.13-management-alpine
+  environment:
+    RABBITMQ_DEFAULT_USER: scheduler
+    RABBITMQ_DEFAULT_PASS: scheduler_secret
+  volumes:
+    - ../../deploy/ha-lab/ha/rabbitmq.conf.tmpl:/etc/rabbitmq/rabbitmq.conf:ro
+  healthcheck:
+    test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+    interval: 5s
+    timeout: 10s
+    retries: 30
+    start_period: 30s
+
+services:
+  rabbitmq-1:
+    <<: *rabbitmq
+    container_name: scheduler-rmq-quorum-1
+    hostname: rabbitmq-1
+    environment:
+      RABBITMQ_DEFAULT_USER: scheduler
+      RABBITMQ_DEFAULT_PASS: scheduler_secret
+      RABBITMQ_NODENAME: rabbit@rabbitmq-1
+    ports:
+      - "25672:15672"
+    volumes:
+      - rabbitmq_1:/var/lib/rabbitmq
+      - ../../deploy/ha-lab/ha/rabbitmq.conf.tmpl:/etc/rabbitmq/rabbitmq.conf:ro
+
+  rabbitmq-2:
+    <<: *rabbitmq
+    container_name: scheduler-rmq-quorum-2
+    hostname: rabbitmq-2
+    environment:
+      RABBITMQ_DEFAULT_USER: scheduler
+      RABBITMQ_DEFAULT_PASS: scheduler_secret
+      RABBITMQ_NODENAME: rabbit@rabbitmq-2
+    ports:
+      - "25673:15672"
+    volumes:
+      - rabbitmq_2:/var/lib/rabbitmq
+      - ../../deploy/ha-lab/ha/rabbitmq.conf.tmpl:/etc/rabbitmq/rabbitmq.conf:ro
+
+  rabbitmq-3:
+    <<: *rabbitmq
+    container_name: scheduler-rmq-quorum-3
+    hostname: rabbitmq-3
+    environment:
+      RABBITMQ_DEFAULT_USER: scheduler
+      RABBITMQ_DEFAULT_PASS: scheduler_secret
+      RABBITMQ_NODENAME: rabbit@rabbitmq-3
+    ports:
+      - "25674:15672"
+    volumes:
+      - rabbitmq_3:/var/lib/rabbitmq
+      - ../../deploy/ha-lab/ha/rabbitmq.conf.tmpl:/etc/rabbitmq/rabbitmq.conf:ro
+
+volumes:
+  rabbitmq_1:
+  rabbitmq_2:
+  rabbitmq_3:

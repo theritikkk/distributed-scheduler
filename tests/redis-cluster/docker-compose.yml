@@ -1,0 +1,44 @@
+# A single container runs six Redis instances on loopback and publishes every
+# port. Cluster nodes can therefore meet each other on 127.0.0.1 inside the
+# container, and the host reaches the same addresses through published ports.
+name: scheduler-redis-cluster
+
+services:
+  redis-cluster:
+    image: redis:7.4-alpine
+    command:
+      - sh
+      - -c
+      - |
+        set -e
+        for port in 7001 7002 7003 7004 7005 7006; do
+          mkdir -p "/data/$$port"
+          redis-server \
+            --port "$$port" \
+            --bind 0.0.0.0 \
+            --protected-mode no \
+            --cluster-enabled yes \
+            --cluster-config-file "/data/$$port/nodes.conf" \
+            --cluster-node-timeout 5000 \
+            --cluster-announce-ip 127.0.0.1 \
+            --cluster-announce-port "$$port" \
+            --cluster-announce-bus-port "$$((port + 10000))" \
+            --appendonly no \
+            --save "" \
+            --dir "/data/$$port" \
+            --daemonize yes \
+            --logfile "/data/$$port/redis.log"
+        done
+        exec tail -f /dev/null
+    ports:
+      - "7001-7006:7001-7006"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "7001", "ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+    volumes:
+      - redis_cluster_data:/data
+
+volumes:
+  redis_cluster_data:
