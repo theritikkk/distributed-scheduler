@@ -9,45 +9,169 @@ on:
 jobs:
   api-gateway:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: scheduler
+          POSTGRES_PASSWORD: scheduler_secret
+          POSTGRES_DB: distributed_scheduler_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U scheduler -d distributed_scheduler_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      NODE_ENV: test
+      JWT_SECRET: test-only-jwt-secret-change-me-32chars
+      DATABASE_URL: postgresql://scheduler:scheduler_secret@localhost:5432/distributed_scheduler_test
+      TEST_DATABASE_URL: postgresql://scheduler:scheduler_secret@localhost:5432/distributed_scheduler_test
+      RABBITMQ_URL: amqp://scheduler:scheduler_secret@localhost:5672
+      LOG_REQUESTS: 'false'
+    defaults:
+      run:
+        working-directory: api-gateway
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: api-gateway/package.json
-      - name: Install and build
-        run: |
-          cd api-gateway
-          npm install
-          npm run build
+          cache-dependency-path: api-gateway/package-lock.json
+      - name: Install
+        run: npm ci
+      - name: Initialize test database
+        run: psql "$DATABASE_URL" -f ../database/init.sql
       - name: Lint
-        run: |
-          cd api-gateway
-          npm run lint 2>/dev/null || true
+        run: npm run lint
+      - name: Test with coverage
+        run: npm run test:coverage
+      - name: Build
+        run: npm run build
 
   coordinator:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: scheduler
+          POSTGRES_PASSWORD: scheduler_secret
+          POSTGRES_DB: distributed_scheduler_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U scheduler -d distributed_scheduler_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      rabbitmq:
+        image: rabbitmq:3-management-alpine
+        env:
+          RABBITMQ_DEFAULT_USER: scheduler
+          RABBITMQ_DEFAULT_PASS: scheduler_secret
+        ports:
+          - 5672:5672
+        options: >-
+          --health-cmd "rabbitmq-diagnostics -q check_running"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      APP_ENV: test
+      DATABASE_URL: postgresql://scheduler:scheduler_secret@localhost:5432/distributed_scheduler_test
+      TEST_DATABASE_URL: postgresql://scheduler:scheduler_secret@localhost:5432/distributed_scheduler_test
+      RABBITMQ_URL: amqp://scheduler:scheduler_secret@localhost:5672
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Install and run
+      - name: Install
         run: |
-          cd coordinator
-          pip install -r requirements.txt
-          python -c "from internal.queue import run_due_consumer, run_result_consumer, run_reconciliation_poller; from internal.registry import Registry; from main import get_db_conn; print('ok')"
+          python -m pip install --upgrade pip
+          pip install -r coordinator/requirements.txt -r requirements-dev.txt
+      - name: Lint
+        run: ruff check coordinator worker scripts tests
+      - name: Test with coverage
+        working-directory: coordinator
+        run: python -m pytest tests -q --cov=internal --cov=metrics --cov-fail-under=45
+      - name: Import smoke test
+        working-directory: coordinator
+        run: python -c "from internal.queue import run_due_consumer, run_outbox_relay, run_reaper, run_result_consumer, run_reconciliation_poller; from internal.registry import Registry; from main import get_db_conn; print('ok')"
 
   worker:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: scheduler
+          POSTGRES_PASSWORD: scheduler_secret
+          POSTGRES_DB: distributed_scheduler_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U scheduler -d distributed_scheduler_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      APP_ENV: test
+      DATABASE_URL: postgresql://scheduler:scheduler_secret@localhost:5432/distributed_scheduler_test
+      TEST_DATABASE_URL: postgresql://scheduler:scheduler_secret@localhost:5432/distributed_scheduler_test
+      RABBITMQ_URL: amqp://scheduler:scheduler_secret@localhost:5672
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Install and run
+      - name: Install
         run: |
-          cd worker
-          pip install -r requirements.txt
-          python -c "from main import get_db_conn, register_worker, execute_task; print('ok')"
+          python -m pip install --upgrade pip
+          pip install -r worker/requirements.txt -r requirements-dev.txt
+      - name: Initialize test database
+        run: psql "$DATABASE_URL" -f database/init.sql
+      - name: Test with coverage
+        working-directory: worker
+        run: python -m pytest tests -q --cov=main --cov=config --cov=metrics --cov=rabbit_topology --cov=db_pool --cov=outbox --cov-fail-under=60
+      - name: Import smoke test
+        working-directory: worker
+        run: python -c "from main import get_db_conn, register_worker, execute_task; from db_pool import WorkerDbPool; print('ok')"
+
+  migrations:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: scheduler
+          POSTGRES_PASSWORD: scheduler_secret
+          POSTGRES_DB: distributed_scheduler
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U scheduler -d distributed_scheduler"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://scheduler:scheduler_secret@localhost:5432/distributed_scheduler
+      TEST_DATABASE_URL: postgresql://scheduler:scheduler_secret@localhost:5432/distributed_scheduler
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+      - name: Bootstrap and apply migrations
+        run: python scripts/migrate.py bootstrap
+      - name: Show migration status
+        run: python scripts/migrate.py status
+      - name: Test migration runner
+        run: pytest tests/migrations -q

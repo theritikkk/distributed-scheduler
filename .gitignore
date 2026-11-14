@@ -5,6 +5,9 @@ dist/
 .env.local
 *.pb.go
 coverage.out
+coverage/
+.coverage
+htmlcov/
 .DS_Store
 .idea/
 .vscode/
@@ -15,3 +18,8 @@ __pycache__/
 venv/
 tests/production-test.js
 .env.save
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfplan
+*.tfvars
