@@ -1,0 +1,70 @@
+global
+  maxconn 4000
+  log stdout format raw local0
+
+defaults
+  mode tcp
+  log global
+  option tcplog
+  timeout connect 3s
+  timeout client 30m
+  timeout server 30m
+  timeout check 2s
+
+frontend pg_primary_front
+  bind *:5433
+  default_backend pg_primary_back
+
+backend pg_primary_back
+  option httpchk GET /primary
+  http-check expect status 200
+  default-server inter 2s fastinter 1s downinter 2s fall 3 rise 2
+  server node1 __NODE1_IP__:5432 check port 8008
+  server node2 __NODE2_IP__:5432 check port 8008
+  server node3 __NODE3_IP__:5432 check port 8008
+
+frontend pg_replica_front
+  bind *:5434
+  default_backend pg_replica_back
+
+backend pg_replica_back
+  option httpchk GET /replica
+  http-check expect status 200
+  default-server inter 2s fastinter 1s downinter 2s fall 3 rise 2
+  server node1 __NODE1_IP__:5432 check port 8008
+  server node2 __NODE2_IP__:5432 check port 8008
+  server node3 __NODE3_IP__:5432 check port 8008
+
+frontend api_front
+  bind *:8080
+  default_backend api_back
+
+backend api_back
+  balance roundrobin
+  option httpchk GET /health
+  http-check expect status 200
+  default-server inter 2s fastinter 1s downinter 2s fall 3 rise 2
+  server node1 __NODE1_IP__:3000 check
+  server node2 __NODE2_IP__:3000 check
+  server node3 __NODE3_IP__:3000 check
+
+frontend rabbitmq_front
+  bind *:5673
+  default_backend rabbitmq_back
+
+backend rabbitmq_back
+  balance roundrobin
+  option tcp-check
+  default-server inter 2s fastinter 1s downinter 2s fall 3 rise 2
+  server node1 __NODE1_IP__:5672 check
+  server node2 __NODE2_IP__:5672 check
+  server node3 __NODE3_IP__:5672 check
+
+listen stats
+  bind *:8404
+  mode http
+  stats enable
+  stats uri /
+  stats refresh 5s
+  # Built-in Prometheus exporter (HAProxy 2.4+ built with USE_PROMEX).
+  http-request use-service prometheus-exporter if { path /metrics }

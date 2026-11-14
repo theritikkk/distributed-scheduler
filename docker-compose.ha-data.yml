@@ -1,0 +1,209 @@
+# Data-plane services for the three-node HA lab.
+#
+# Run this on every node before starting the application services:
+#   docker compose -f docker-compose.ha-data.yml up -d
+#
+# All services use host networking so etcd, Patroni, RabbitMQ, and Redis can
+# advertise their EC2 private IPs and use the host's /etc/hosts entries.
+name: scheduler-ha-data
+
+services:
+  etcd:
+    image: quay.io/coreos/etcd:v3.5.15
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      ETCD_NAME: ${NODE_NAME}
+      ETCD_DATA_DIR: /etcd-data
+      ETCD_LISTEN_CLIENT_URLS: http://0.0.0.0:2379
+      ETCD_ADVERTISE_CLIENT_URLS: http://${NODE_IP}:2379
+      ETCD_LISTEN_PEER_URLS: http://0.0.0.0:2380
+      ETCD_INITIAL_ADVERTISE_PEER_URLS: http://${NODE_IP}:2380
+      ETCD_INITIAL_CLUSTER: ${ETCD_INITIAL_CLUSTER}
+      ETCD_INITIAL_CLUSTER_STATE: new
+      ETCD_INITIAL_CLUSTER_TOKEN: scheduler-ha
+      ETCD_ENABLE_V2: "true"
+    volumes:
+      - etcd_data:/etcd-data
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health", "--endpoints=http://127.0.0.1:2379"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  patroni:
+    image: ongres/patroni:v4.0.4-pg16.6-build-6.39
+    restart: unless-stopped
+    network_mode: host
+    user: postgres
+    command: ["patroni", "/etc/patroni/patroni.yml"]
+    volumes:
+      - ./runtime/patroni.yml:/etc/patroni/patroni.yml:ro
+      - ./runtime/patroni-post-bootstrap.sh:/etc/patroni/post-bootstrap.sh:ro
+      - patroni_data:/var/lib/postgresql
+    depends_on:
+      etcd:
+        condition: service_started
+
+  haproxy:
+    image: haproxy:2.9-alpine
+    restart: unless-stopped
+    network_mode: host
+    command: ["haproxy", "-f", "/usr/local/etc/haproxy/haproxy.cfg"]
+    volumes:
+      - ./runtime/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    depends_on:
+      - patroni
+      - rabbitmq
+
+  # Optional software load balancer. deploy.sh starts this on node1 with
+  # `--profile lb`; it fronts the three per-node HAProxy API listeners. For a
+  # stable production endpoint, run it on every node behind DNS or replace it
+  # with a managed load balancer.
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    network_mode: host
+    profiles: ["lb"]
+    volumes:
+      - ./runtime/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - haproxy
+
+  pgbouncer:
+    image: edoburu/pgbouncer:latest
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      # Rendered by deploy.sh; the userlist is mode 0600 and owned by uid 70.
+      - ./runtime/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini:ro
+      - ./runtime/pgbouncer-userlist.txt:/etc/pgbouncer/userlist.txt:ro
+    depends_on:
+      - haproxy
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 6432 -U scheduler -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    restart: unless-stopped
+    hostname: ${NODE_NAME}
+    network_mode: host
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+      RABBITMQ_ERLANG_COOKIE: ${RABBITMQ_ERLANG_COOKIE}
+      RABBITMQ_NODENAME: rabbit@${NODE_NAME}
+      RABBITMQ_USE_LONGNAME: "false"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      - ./runtime/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 20s
+      retries: 20
+      start_period: 60s
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      NODE_NAME: ${NODE_NAME}
+      NODE_IP: ${NODE_IP}
+    command:
+      - sh
+      - -c
+      - |
+        if [ "$${NODE_NAME}" = "node1" ]; then
+          exec redis-server --port 6379 --bind 0.0.0.0 --protected-mode no \
+            --save "" --appendonly no --replica-announce-ip "$${NODE_IP}"
+        else
+          exec redis-server --port 6379 --bind 0.0.0.0 --protected-mode no \
+            --save "" --appendonly no --replica-announce-ip "$${NODE_IP}" \
+            --replicaof node1 6379
+        fi
+
+  redis-sentinel:
+    image: redis:7-alpine
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      NODE1_IP: ${NODE1_IP}
+    command:
+      - sh
+      - -c
+      - |
+        printf '%s\n' \
+          'port 26379' \
+          'daemonize no' \
+          'protected-mode no' \
+          'dir /data' \
+          'sentinel monitor scheduler '"$${NODE1_IP}"' 6379 2' \
+          'sentinel down-after-milliseconds scheduler 5000' \
+          'sentinel failover-timeout scheduler 60000' \
+          'sentinel parallel-syncs scheduler 1' > /data/sentinel.conf
+        exec redis-server /data/sentinel.conf --sentinel
+    volumes:
+      - sentinel_data:/data
+
+  redis-sentinel-proxy:
+    image: flant/redis-sentinel-proxy:latest
+    restart: unless-stopped
+    network_mode: host
+    command:
+      - -listen
+      - 0.0.0.0:6380
+      - -sentinel
+      - 127.0.0.1:26379
+      - -master
+      - scheduler
+    depends_on:
+      - redis-sentinel
+
+  rabbitmq-exporter:
+    image: kbudde/rabbitmq-exporter:latest
+    restart: unless-stopped
+    network_mode: host
+    profiles: ["monitoring"]
+    environment:
+      RABBIT_URL: http://127.0.0.1:15672
+      RABBIT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBIT_PASSWORD: ${RABBITMQ_DEFAULT_PASS}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  # One exporter per node so Prometheus can see each local pool. The exporter
+  # connects to the pgbouncer admin virtual database and only runs SHOW
+  # commands as the stats_users account.
+  pgbouncer-exporter:
+    image: prometheuscommunity/pgbouncer-exporter:latest
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      PGBOUNCER_EXPORTER_CONNECTION_STRING: postgres://scheduler:${POSTGRES_PASSWORD}@127.0.0.1:6432/pgbouncer?sslmode=disable
+    depends_on:
+      pgbouncer:
+        condition: service_healthy
+
+  # Scrapes the local Redis process. On node1 this is the master; on node2/3 it
+  # is a replica, so the replication and link metrics are available per node.
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      REDIS_ADDR: redis://127.0.0.1:6379
+    depends_on:
+      - redis
+
+volumes:
+  etcd_data:
+  patroni_data:
+  rabbitmq_data:
+  sentinel_data:

@@ -1,0 +1,35 @@
+## RabbitMQ node configuration for the three-node HA lab.
+##
+## This file is rendered to runtime/rabbitmq.conf and mounted read-only into
+## the broker container. Quorum queue arguments are declared by the
+## application, not here; see coordinator/internal/queue/topology.py.
+
+## Resource alarms. The broker blocks publishers before the OS OOM killer or
+## a full disk can corrupt the node. Keep paging below the watermark so the
+## broker starts paging before it blocks.
+vm_memory_high_watermark.relative = 0.60
+vm_memory_high_watermark_paging_ratio = 0.90
+disk_free_limit.absolute = 2GB
+
+## Network partitions. pause_minority keeps a minority node from serving
+## stale state; quorum queues additionally require a Raft majority. The
+## partition drill in tests/rabbitmq-quorum/ documents the pause and resume.
+cluster_partition_handling = pause_minority
+
+## Quorum queue defaults. The leader locator balances leaders across nodes;
+## the WAL cap bounds per-queue disk growth (segments are reclaimed after
+## snapshotting).
+queue_leader_locator = balanced
+raft.wal_max_size_bytes = 536870912
+
+## A consumer that holds an unacked message longer than this is assumed dead.
+## Application command timeout defaults to 300s, so 30 minutes leaves ample
+## headroom for slow commands and result publication.
+consumer_timeout = 1800000
+
+## Protocol limits. The worker caps command output separately; this is a
+## broker-side backstop against oversized messages.
+channel_max = 2047
+max_message_size = 134217728
+
+log.console.level = info

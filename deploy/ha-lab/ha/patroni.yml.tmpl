@@ -1,0 +1,68 @@
+scope: scheduler
+namespace: /scheduler/
+name: __NODE_NAME__
+restapi:
+  listen: 0.0.0.0:8008
+  connect_address: __NODE_IP__:8008
+
+etcd:
+  hosts:
+    - __NODE1_IP__:2379
+    - __NODE2_IP__:2379
+    - __NODE3_IP__:2379
+
+bootstrap:
+  dcs:
+    ttl: 30
+    loop_wait: 10
+    retry_timeout: 10
+    maximum_lag_on_failover: 1048576
+    # Enabled after the cluster has a synchronous standby. See deploy.sh.
+    synchronous_mode: false
+    synchronous_mode_strict: false
+    postgresql:
+      use_pg_rewind: true
+      use_slots: true
+      parameters:
+        max_connections: 200
+        shared_buffers: 256MB
+        work_mem: 8MB
+        maintenance_work_mem: 64MB
+        wal_level: replica
+        hot_standby: "on"
+        max_wal_senders: 20
+        max_replication_slots: 20
+        wal_keep_size: 256MB
+        synchronous_commit: "on"
+        statement_timeout: 5000
+        lock_timeout: 2000
+        idle_in_transaction_session_timeout: 60000
+  initdb:
+    - encoding: UTF8
+    - data-checksums
+  pg_hba:
+    - local all all trust
+    - host all all 0.0.0.0/0 scram-sha-256
+    - host replication replicator 0.0.0.0/0 scram-sha-256
+  # Patroni 4 removed bootstrap.users. The post_bootstrap script creates the
+  # replication and application roles; it is rendered and mounted by deploy.sh.
+  post_bootstrap: /etc/patroni/post-bootstrap.sh
+
+postgresql:
+  listen: 0.0.0.0:5432
+  connect_address: __NODE_IP__:5432
+  data_dir: /var/lib/postgresql/data
+  bin_dir: /usr/lib/postgresql/16.6/bin
+  authentication:
+    replication:
+      username: replicator
+      password: __REPLICATION_PASSWORD__
+    superuser:
+      username: postgres
+      password: __SUPERUSER_PASSWORD__
+    rewind:
+      username: postgres
+      password: __SUPERUSER_PASSWORD__
+  parameters:
+    unix_socket_directories: /tmp
+    listen_addresses: "*"

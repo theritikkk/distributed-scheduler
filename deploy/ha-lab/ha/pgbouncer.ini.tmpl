@@ -1,0 +1,62 @@
+; PgBouncer for the three-node HA lab.
+;
+; Services connect to their local pooler on host.docker.internal:6432.
+; PgBouncer opens server connections to the local HAProxy primary listener
+; (127.0.0.1:5433), which follows the Patroni leader through its /primary
+; health check. During a PostgreSQL failover the server connections break and
+; PgBouncer reconnects through HAProxy to the new primary.
+;
+; Transaction pooling is required for the scheduler's short transactions and
+; is compatible with pg_advisory_xact_lock. Never use session-scoped advisory
+; locks behind this pooler.
+[databases]
+__POSTGRES_DB__ = host=127.0.0.1 port=5433 dbname=__POSTGRES_DB__
+
+[pgbouncer]
+listen_addr = 0.0.0.0
+listen_port = 6432
+
+; The image runs pgbouncer as the postgres OS user. The auth file is rendered
+; with mode 0600 and owned by uid/gid 70 by deploy.sh.
+user = postgres
+auth_type = scram-sha-256
+auth_file = /etc/pgbouncer/userlist.txt
+
+pool_mode = transaction
+max_client_conn = 1000
+default_pool_size = 40
+min_pool_size = 5
+reserve_pool_size = 10
+reserve_pool_timeout = 3
+max_db_connections = 80
+
+; Keep server connections healthy across HAProxy/Patroni moves.
+server_idle_timeout = 60
+server_lifetime = 3600
+server_connect_timeout = 5
+server_login_retry = 2
+; DISCARD ALL runs after every transaction when server_reset_query_always is
+; enabled. The scheduler uses no session-scoped state and psycopg2 does not
+; prepare server-side statements, so the extra round trip is safe and prevents
+; a connection from leaking SET/temp state to the next client. Do not enable
+; this if a future driver relies on server-side prepared statements.
+server_reset_query = DISCARD ALL
+server_reset_query_always = 1
+
+client_login_timeout = 10
+client_idle_timeout = 600
+query_wait_timeout = 30
+; The coordinator passes statement_timeout/lock_timeout through libpq's
+; `options` startup parameter. PgBouncer rejects per-option parameters it does
+; not model, so ignore the whole `options` parameter and let the database-level
+; timeouts (Patroni sets statement_timeout and lock_timeout cluster-wide) apply.
+ignore_startup_parameters = extra_float_digits,options
+
+; The exporter connects as scheduler and only issues SHOW commands.
+admin_users = postgres
+stats_users = scheduler
+
+log_connections = 1
+log_disconnections = 1
+log_pooler_errors = 1
+stats_period = 60

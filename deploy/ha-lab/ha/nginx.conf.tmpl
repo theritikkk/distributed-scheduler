@@ -1,0 +1,77 @@
+# Software load balancer for the HA lab (replacement for an AWS NLB).
+#
+# One nginx runs on each node when the "lb" compose profile is enabled. It
+# accepts client HTTP on :8081 and load balances across the per-node HAProxy
+# API listeners on :8080. The per-node HAProxy still owns backend health
+# checks for PostgreSQL, RabbitMQ, and the local API process.
+#
+# Open-source nginx has passive upstream health checks only. max_fails and
+# fail_timeout are deliberate: two consecutive failures take a node out for
+# 10 seconds, while proxy_next_upstream retries the next node so a client does
+# not see a 502 during a single node failure.
+user nginx;
+worker_processes auto;
+pid /var/run/nginx.pid;
+
+events {
+    worker_connections 4096;
+}
+
+http {
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+    server_tokens off;
+
+    log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                    '$status $body_bytes_sent "$http_referer" '
+                    '"$http_user_agent" "$http_x_forwarded_for" '
+                    'upstream=$upstream_addr status=$upstream_status '
+                    'time=$request_time';
+    access_log /dev/stdout main;
+    error_log /dev/stderr warn;
+
+    sendfile on;
+    keepalive_timeout 65;
+    client_max_body_size 2m;
+
+    upstream scheduler_api {
+        least_conn;
+        server __NODE1_IP__:8080 max_fails=2 fail_timeout=10s;
+        server __NODE2_IP__:8080 max_fails=2 fail_timeout=10s;
+        server __NODE3_IP__:8080 max_fails=2 fail_timeout=10s;
+        keepalive 64;
+    }
+
+    server {
+        listen 8081;
+        server_name _;
+
+        # Local liveness endpoint. It does not depend on the API backends, so
+        # an orchestrator or operator can distinguish "nginx is up" from
+        # "the API tier is up".
+        location = /health {
+            access_log off;
+            add_header Content-Type text/plain;
+            return 200 "ok\n";
+        }
+
+        location / {
+            proxy_pass http://scheduler_api;
+            proxy_http_version 1.1;
+            proxy_set_header Connection "";
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+
+            proxy_connect_timeout 3s;
+            proxy_send_timeout 30s;
+            proxy_read_timeout 30s;
+
+            # Retry a different node on connection failure or a gateway error.
+            proxy_next_upstream error timeout http_502 http_503 http_504;
+            proxy_next_upstream_tries 2;
+            proxy_next_upstream_timeout 10s;
+        }
+    }
+}
