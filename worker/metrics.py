@@ -52,8 +52,27 @@ TASK_DURATION = Histogram(
     buckets=(0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10, 30, 60, 120, 300),
 )
 
+RETRY_BACKOFF = Histogram(
+    "scheduler_worker_retry_backoff_seconds",
+    "Delay applied before a failed task is retried",
+    ["worker_id"],
+    buckets=(0.01, 0.05, 0.1, 0.5, 1, 2, 5, 10, 30, 60, 120, 300),
+)
+
 CONSUMER_UP = Gauge(
     "scheduler_worker_consumer_up",
     "1 while worker is connected and consuming scheduler.tasks",
+    ["worker_id"],
+)
+
+LEASE_HEARTBEAT_FAILURES = Counter(
+    "scheduler_worker_lease_heartbeat_failures_total",
+    "Failures while extending an execution lease",
+    ["worker_id"],
+)
+
+LEASE_LOST = Counter(
+    "scheduler_worker_lease_lost_total",
+    "Execution leases lost because another worker/reaper took ownership",
     ["worker_id"],
 )
