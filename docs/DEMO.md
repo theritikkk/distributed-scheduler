@@ -16,24 +16,27 @@ Step-by-step walkthrough for demonstrating the distributed scheduler end-to-end.
 
 ```
 API Gateway
-    │  publishes TTL wakeup
+    │  task + outbox event (one DB transaction)
     ▼
-scheduler.delay  ──TTL expires──▶  scheduler.due
-                                         │
-                                    Coordinator
-                                         │  dispatches
-                                         ▼
-                                   scheduler.tasks
-                                         │
-                                    worker-1/2/3
-                                         │  publishes result
-                                         ▼
-                                   scheduler.results
-                                         │
-                                    Coordinator
-                                         │  updates DB
-                                         ▼
-                                    PostgreSQL
+PostgreSQL outbox ──relay──▶ scheduled_events
+                                  │  due
+                                  ▼
+                             scheduler.due
+                                  │
+                             Coordinator
+                                  │  dispatches
+                                  ▼
+                             scheduler.tasks
+                                  │
+                             worker-1…10
+                                  │  publishes result
+                                  ▼
+                             scheduler.results
+                                  │
+                             Coordinator
+                                  │  updates DB
+                                  ▼
+                              PostgreSQL
 ```
 
 ## Retry / failure flow
@@ -42,10 +45,13 @@ scheduler.delay  ──TTL expires──▶  scheduler.due
 scheduler.tasks
       │  worker failure
       ▼
-scheduler.retry_delay  ──TTL expires──▶  scheduler.tasks  (retry)
-                                                │  max retries exhausted
-                                                ▼
-                                       scheduler.tasks.dlq
+DB retry state + outbox ──relay──▶ scheduled_events
+                                         │  due
+                                         ▼
+                                   scheduler.tasks  (retry)
+                                         │  max retries exhausted
+                                         ▼
+                                   scheduler.tasks.dlq
 ```
 
 ---
@@ -59,7 +65,7 @@ docker compose logs -f coordinator
 ```
 
 ```bash
-docker compose logs -f worker-1 worker-2 worker-3
+docker compose logs -f worker-1 worker-2 worker-3 worker-4 worker-5 worker-6 worker-7 worker-8 worker-9 worker-10
 ```
 
 ---
@@ -88,7 +94,7 @@ echo $TOKEN
 
 ## Step 3 — Create a one-time task
 
-Set `next_execution_time` to 1–2 minutes from now in UTC ISO 8601.
+Set `next_execution_time` to 1–2 minutes from now in UTC ISO 8601. The response also includes `dispatch_at`; with jitter disabled or `jitter_seconds: 0`, they are the same.
 
 ```bash
 TASK=$(curl -s -X POST http://YOUR_EC2_IP:3000/api/v1/tasks \
@@ -106,7 +112,7 @@ TASK_ID=$(echo $TASK | jq -r '.id')
 echo "TASK_ID=$TASK_ID"
 ```
 
-Watch the coordinator log — you should see the task dispatched when TTL expires.
+Watch the coordinator log — you should see the timer materialized and the task dispatched when `dispatch_at` arrives.
 
 ---
 
@@ -134,7 +140,8 @@ RECUR=$(curl -s -X POST http://YOUR_EC2_IP:3000/api/v1/tasks \
     "command_payload": {"command": "echo recurring-ping"},
     "schedule_type": "recurring",
     "cron_expression": "* * * * *",
-    "next_execution_time": "2026-06-01T10:01:00Z"
+    "jitter_seconds": 10,
+    "jitter_policy": "stable"
   }')
 
 RECUR_ID=$(echo $RECUR | jq -r '.id')
@@ -148,7 +155,7 @@ curl -s "http://YOUR_EC2_IP:3000/api/v1/tasks/$RECUR_ID/executions" \
   -H "Authorization: Bearer $TOKEN" | jq
 ```
 
-Expected: multiple execution rows, each with an updated `next_execution_time`.
+Expected: multiple execution rows, each with a stable `scheduled_for` slot. The task's `next_execution_time` and `dispatch_at` advance to the next cron slot plus the stable offset (up to 10s later).
 
 ---
 
@@ -164,7 +171,7 @@ Expected: multiple execution rows, each with an updated `next_execution_time`.
 - Go to Explore → Loki → run: `{service="worker"} |= "completed"`
 
 **Prometheus** — `http://YOUR_EC2_IP:9091`
-- Go to Status → Targets — all 3 workers should show UP with individual scrape timestamps.
+- Go to Status → Targets — all 10 workers should show UP with individual scrape timestamps.
 
 ---
 
@@ -174,8 +181,8 @@ Expected: multiple execution rows, each with an updated `next_execution_time`.
 2. "The task is stored in PostgreSQL. The API publishes a TTL wakeup to RabbitMQ — when the TTL expires, the coordinator is triggered."
 3. "Here in the coordinator log you can see it picked up the task, created an execution record, and dispatched it to `scheduler.tasks`."
 4. "A worker picked it up, ran the command, and published the result back. The coordinator updated the execution history."
-5. "For recurring tasks, the coordinator computes the next run time from the cron expression and reschedules automatically."
-6. "All three workers are independently scraped by Prometheus — you can see per-worker utilization in Grafana."
+5. "For recurring tasks, the coordinator advances from the execution's `scheduled_for` slot, so cadence does not drift, and reschedules automatically."
+6. "All ten workers are independently scraped by Prometheus — you can see per-worker utilization in Grafana."
 7. "Logs from every container flow into Loki and are queryable in Grafana alongside the metrics."
 
 ---
@@ -186,7 +193,7 @@ Expected: multiple execution rows, each with an updated `next_execution_time`.
 |---------|-----|
 | 401 Unauthorized | Token expired — re-run login |
 | Task not executing | Check `docker compose logs coordinator` — is it consuming `scheduler.due`? |
-| No execution records | Verify `next_execution_time` is in the future in UTC |
+| No execution records | Verify `dispatch_at` (or `next_execution_time` when jitter is off) is in the future in UTC |
 | Worker not in Prometheus | Check `docker compose logs worker-1` — is metrics port binding? |
 | RabbitMQ connection refused | Check `docker compose logs rabbitmq` — wait for healthy |
 
