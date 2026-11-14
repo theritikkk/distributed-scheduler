@@ -1,61 +1,46 @@
-import express from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
-import { authRouter } from './routes/auth';
-import { tasksRouter } from './routes/tasks';
-import { errorHandler } from './middleware/errorHandler';
-import { requestLogger } from './middleware/logger';
-import { registerMetricsEndpoint } from './metrics';
+import './tracing';
+import { app } from './app';
+import { config } from './config';
 import { connectQueue } from './queue';
+import { shutdownTracing, startTracing } from './tracing';
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+startTracing();
 
 connectQueue().catch(
   (err) => console.warn('RabbitMQ connect failed (optional):', err.message)
 );
 
-app.use( helmet() );
+const server = app.listen( config.port, '0.0.0.0', () => {
 
-app.use( cors(
-  { origin: process.env.CORS_ORIGIN || '*' }
-));
+  console.log( `API Gateway listening on port ${ config.port }` );
 
-app.use( express.json(
-  { limit: '10kb' }
-));
-
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10000,
-  message: { error: 'Too many requests, please try again later.' },
-  standardHeaders: true,
-  legacyHeaders: false,
 });
 
-app.use( '/api/', limiter );
+function shutdown( signal: string ): void {
 
-app.use( requestLogger );
+  console.log( `Received ${ signal }; shutting down` );
 
-registerMetricsEndpoint( app );
+  server.close( ( error ) => {
 
-app.get( '/health', (_, res) => 
-  
-  res.json(
-    { status: 'ok', service: 'api-gateway' }
-  )
+    if( error ) {
+      console.error( 'HTTP server shutdown failed', error );
+      process.exit( 1 );
+    }
 
-);
+    void shutdownTracing()
+      .catch( ( tracingError ) => {
+        console.warn( 'Tracing shutdown failed', tracingError );
+      })
+      .finally( () => process.exit( 0 ) );
 
-app.use( '/api/v1/auth', authRouter );
+  });
 
-app.use( '/api/v1/tasks', tasksRouter );
+  setTimeout( () => {
+    console.error( 'Forced shutdown after timeout' );
+    process.exit( 1 );
+  }, 10_000 ).unref();
 
-app.use( errorHandler );
+}
 
-app.listen( 3000, '0.0.0.0', () => {
-
-  console.log( `API Gateway listening on port ${PORT}` );
-  
-});
+process.on( 'SIGTERM', () => shutdown( 'SIGTERM' ) );
+process.on( 'SIGINT', () => shutdown( 'SIGINT' ) );

@@ -1,14 +1,15 @@
 import { Pool } from 'pg';
-
-const connectionString =
-  process.env.DATABASE_URL ||
-  'postgresql://scheduler:scheduler_secret@localhost:5432/distributed_scheduler';
+import { config } from './config';
 
 export const pool = new Pool({
-  connectionString,
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  connectionString: config.databaseUrl,
+  max: config.dbPoolMax,
+  idleTimeoutMillis: config.dbIdleTimeoutMs,
+  connectionTimeoutMillis: config.dbConnectionTimeoutMs,
+});
+
+pool.on('error', (error) => {
+  console.error('Unexpected PostgreSQL pool error', error);
 });
 
 export interface User {
@@ -36,10 +37,15 @@ export interface TaskExecution {
   id: string;
   task_id: string;
   worker_id: string | null;
-  started_at: Date;
+  scheduled_for: Date;
+  started_at: Date | null;
   completed_at: Date | null;
   status: string;
   output: string | null;
   error_message: string | null;
+  lease_id: string | null;
+  lease_expires_at: Date | null;
+  next_attempt_at: Date | null;
+  attempt: number;
   created_at: Date;
 }

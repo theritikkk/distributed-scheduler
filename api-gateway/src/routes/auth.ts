@@ -3,16 +3,12 @@ import { body, validationResult } from 'express-validator';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { pool } from '../db';
+import { config } from '../config';
 import { AppError } from '../middleware/errorHandler';
 import { JwtPayload } from '../middleware/auth';
+import { loginRateLimit } from '../rate-limit';
 
 export const authRouter = Router();
-
-if( !process.env.JWT_SECRET ) {  
-  throw new Error( 'JWT_SECRET missing' );
-}
-
-const JWT_SECRET = process.env.JWT_SECRET;
 
 const SALT_ROUNDS = 10;
 
@@ -60,7 +56,7 @@ authRouter.post(
 
       const token = jwt.sign(
         { userId: user.id, email: user.email } as JwtPayload,
-        JWT_SECRET,
+        config.jwtSecret,
         { expiresIn: '7d' }
       );
 
@@ -104,6 +100,8 @@ authRouter.post(
     body('password').notEmpty().withMessage('Password required'),
   ],
 
+  loginRateLimit,
+
   async( req: Request, res: Response, next: NextFunction ) => {
 
     try {
@@ -135,7 +133,7 @@ authRouter.post(
 
       const token = jwt.sign(
         { userId: user.id, email: user.email } as JwtPayload,
-        JWT_SECRET,
+        config.jwtSecret,
         { expiresIn: '7d' }
       );
 
