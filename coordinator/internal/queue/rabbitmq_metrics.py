@@ -7,7 +7,7 @@ from urllib.parse import quote, urlparse
 
 import requests
 
-from metrics import RABBITMQ_QUEUE_MESSAGES
+from metrics import COORDINATOR_ID, RABBITMQ_QUEUE_MESSAGES
 from .topology import DUE_QUEUE, DELAY_QUEUE, RESULT_QUEUE, RETRY_DELAY_QUEUE, TASK_DLQ, TASK_QUEUE
 
 logger = logging.getLogger( __name__ )
@@ -21,7 +21,7 @@ QUEUES_TO_TRACK = (
     RESULT_QUEUE,
 )
 
-POLL_INTERVAL_SEC = int( os.environ.get( "RABBITMQ_METRICS_POLL_SEC", "15" ) )
+POLL_INTERVAL_SEC = 15
 
 
 def _management_base_url( rabbit_url: str ) -> str:
@@ -43,28 +43,36 @@ def _poll_once( api_base: str ) -> None:
                 continue
             data = r.json()
             depth = int( data.get("messages", 0) or 0 )
-            RABBITMQ_QUEUE_MESSAGES.labels( queue = queue ).set( depth )
+            RABBITMQ_QUEUE_MESSAGES.labels(
+                coordinator_id=COORDINATOR_ID, queue=queue
+            ).set(depth)
         except Exception as e:
             logger.debug("queue metrics %s: %s", queue, e)
 
 
-def run_rabbitmq_queue_metrics_poller( rabbit_url: str ) -> None:
+def run_rabbitmq_queue_metrics_poller(
+    rabbit_url: str, poll_interval_sec: int = POLL_INTERVAL_SEC
+) -> None:
     api_base = _management_base_url( rabbit_url )
-    logger.info( "RabbitMQ queue metrics poller started (interval=%ss)", POLL_INTERVAL_SEC )
+    logger.info(
+        "RabbitMQ queue metrics poller started (interval=%ss)", poll_interval_sec
+    )
 
     while True:
         try:
             _poll_once( api_base )
         except Exception as e:
             logger.warning( "rabbitmq metrics poll: %s", e )
-        time.sleep( POLL_INTERVAL_SEC )
+        time.sleep( poll_interval_sec )
 
 
-def start_rabbitmq_queue_metrics_poller( rabbit_url: str ) -> None:
+def start_rabbitmq_queue_metrics_poller(
+    rabbit_url: str, poll_interval_sec: int = POLL_INTERVAL_SEC
+) -> None:
     
     t = threading.Thread(
         target = run_rabbitmq_queue_metrics_poller,
-        args = ( rabbit_url, ),
+        args = ( rabbit_url, poll_interval_sec ),
         daemon = True,
         name = "rabbitmq-metrics",
     )
