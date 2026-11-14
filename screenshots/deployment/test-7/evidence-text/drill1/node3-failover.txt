@@ -1,0 +1,41 @@
+drill1 leader-loss controller on node3
+pre_leader=172.31.20.4
+pre_role_node3=primary running 1
+waiting 25s for the node1 task stream to establish...
+stop_epoch=1794492706
+stop_ts=2026-11-12T14:11:46Z
+ Container scheduler-ha-data-patroni-1 Stopping 
+ Container scheduler-ha-data-patroni-1 Stopped 
+stop_returned_ts=2026-11-12T14:11:47Z
+container_state=exited
+promoted_leader=172.31.5.27
+promotion_epoch=1794492707
+promotion_seconds=1
+promotion_ts=2026-11-12T14:11:47Z
+promoted_role=primary running 2
+--- HAProxy on node3 after promotion ---
+pg_primary_back,node1,0,0,0,0
+pg_primary_back,node2,0,0,0,0
+pg_primary_back,node3,0,0,0,6
+pg_primary_back,BACKEND,0,0,0,6
+pg_replica_back,node1,0,0,0,0
+pg_replica_back,node2,0,0,0,0
+pg_replica_back,node3,0,0,0,0
+pg_replica_back,BACKEND,0,0,0,0
+--- waiting 30s before restarting node3 Patroni ---
+restart_epoch=1794492737
+restart_ts=2026-11-12T14:12:17Z
+ Container scheduler-ha-data-patroni-1 Starting 
+ Container scheduler-ha-data-patroni-1 Started 
+rejoin_ok epoch=1794492739 ts=2026-11-12T14:12:19Z role=replica running 2
+joined=1
+final_leader=172.31.5.27
+final_role_node3=replica running 2
++ Cluster: scheduler (7706851908036096019) --------+----+-----------+
+| Member | Host         | Role         | State     | TL | Lag in MB |
++--------+--------------+--------------+-----------+----+-----------+
+| node1  | 172.31.40.27 | Sync Standby | streaming |  2 |         0 |
+| node2  | 172.31.5.27  | Leader       | running   |  2 |           |
+| node3  | 172.31.20.4  | Replica      | streaming |  2 |         0 |
++--------+--------------+--------------+-----------+----+-----------+
+

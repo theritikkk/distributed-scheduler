@@ -1,0 +1,42 @@
+TEARDOWN VERIFICATION
+2026-11-12T14:58:03Z
+
+terraform destroy result:
+Plan: 0 to add, 0 to change, 12 to destroy.
+Destroy complete! Resources: 12 destroyed.
+
+terraform state list (count):
+       0
+
+lab instances:
+i-0768416dc03bcd66d	terminated
+i-04edb2bde1c4c2371	terminated
+i-0971d5c38b4cff21e	terminated
+
+lab security groups:
+(none above means deleted)
+
+S3 artifact bucket:
+
+An error occurred (404) when calling the HeadBucket operation: Not Found
+
+IAM role:
+
+An error occurred (NoSuchEntity) when calling the GetRole operation: The role with name scheduler-ha-lab-ssm cannot be found.
+
+leftover lab EBS volumes:
+(none above means deleted)
+
+unrelated instances still running (not touched):
+i-0c798e2af554351d8	m7i-flex.large
+scheduler-free-tier
+i-031841aa6ad78d8f6	m7i-flex.large
+recall-server
+
+local E2E stack (not touched):
+api_health=200
+scheduler-e2e-coordinator-1	Up 29 hours
+scheduler-e2e-api-gateway-1	Up 29 hours
+scheduler-e2e-rabbitmq-exporter-1	Up 29 hours (healthy)
+scheduler-e2e-rabbitmq-1	Up 29 hours (healthy)
+scheduler-e2e-postgres-1	Up 29 hours (healthy)

@@ -1,0 +1,60 @@
+{
+  "run_id": "1794303649",
+  "environment": "local Docker Compose E2E (macOS)",
+  "note": "Local evidence only. This is not an AWS benchmark and the AWS HA lab was not re-provisioned.",
+  "task_count": 300,
+  "concurrency": 20,
+  "scheduled_for": "2026-11-10T09:41:14.404679Z",
+  "submission": {
+    "wall_seconds": 1.839,
+    "requests_per_second": 163.1,
+    "failures": 0,
+    "p50_ms": 100.97,
+    "p95_ms": 354.11,
+    "max_ms": 414.73
+  },
+  "completion": {
+    "completed": 300,
+    "failed": 0,
+    "all_completed": true,
+    "drain_seconds_after_due": 17.411,
+    "execution_count": 300,
+    "execution_avg_ms": 3047.28,
+    "execution_max_ms": 5630.73,
+    "first_started_at": "2026-11-10 09:41:17.381",
+    "last_completed_at": "2026-11-10 09:41:30.906"
+  },
+  "workers": {
+    "worker-6-1": 32,
+    "worker-10-1": 31,
+    "worker-2-1": 31,
+    "worker-8-1": 31,
+    "worker-4-1": 30,
+    "worker-1-1": 29,
+    "worker-3-1": 29,
+    "worker-5-1": 29,
+    "worker-7-1": 29,
+    "worker-9-1": 29
+  },
+  "attempts": {
+    "rows": 300,
+    "retries": 0
+  },
+  "health": {
+    "/health": {
+      "status": 200,
+      "body": {
+        "status": "ok",
+        "service": "api-gateway",
+        "version": "dev"
+      }
+    },
+    "/health/ready": {
+      "status": 200,
+      "body": {
+        "status": "ready",
+        "service": "api-gateway"
+      }
+    }
+  }
+}

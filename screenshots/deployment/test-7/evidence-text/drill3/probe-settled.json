@@ -1,0 +1,630 @@
+{
+  "summary": {
+    "phase": "settled",
+    "attempts": 60,
+    "interval_seconds": 0,
+    "status_counts": {
+      "201": 10,
+      "429": 50
+    },
+    "allowed_2xx": 10,
+    "denied_429": 50,
+    "server_5xx": 0,
+    "network_errors": 0,
+    "sources": [
+      "redis"
+    ],
+    "policies": [
+      "user:tasks"
+    ],
+    "latency_ms": {
+      "p50": 3.75,
+      "max": 18.24
+    },
+    "retry_after_samples": [
+      "1"
+    ]
+  },
+  "records": [
+    {
+      "i": 0,
+      "status": 201,
+      "latency_ms": 18.24,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "9",
+      "retry_after": null,
+      "error": null
+    },
+    {
+      "i": 1,
+      "status": 201,
+      "latency_ms": 11.277,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "8",
+      "retry_after": null,
+      "error": null
+    },
+    {
+      "i": 2,
+      "status": 201,
+      "latency_ms": 12.297,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "7",
+      "retry_after": null,
+      "error": null
+    },
+    {
+      "i": 3,
+      "status": 201,
+      "latency_ms": 11.041,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "6",
+      "retry_after": null,
+      "error": null
+    },
+    {
+      "i": 4,
+      "status": 201,
+      "latency_ms": 10.566,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "5",
+      "retry_after": null,
+      "error": null
+    },
+    {
+      "i": 5,
+      "status": 201,
+      "latency_ms": 10.824,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "4",
+      "retry_after": null,
+      "error": null
+    },
+    {
+      "i": 6,
+      "status": 201,
+      "latency_ms": 12.409,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "3",
+      "retry_after": null,
+      "error": null
+    },
+    {
+      "i": 7,
+      "status": 201,
+      "latency_ms": 9.932,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "2",
+      "retry_after": null,
+      "error": null
+    },
+    {
+      "i": 8,
+      "status": 201,
+      "latency_ms": 11.383,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "1",
+      "retry_after": null,
+      "error": null
+    },
+    {
+      "i": 9,
+      "status": 201,
+      "latency_ms": 10.075,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": null,
+      "error": null
+    },
+    {
+      "i": 10,
+      "status": 429,
+      "latency_ms": 3.454,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":884}"
+    },
+    {
+      "i": 11,
+      "status": 429,
+      "latency_ms": 3.545,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":880}"
+    },
+    {
+      "i": 12,
+      "status": 429,
+      "latency_ms": 4.2,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":876}"
+    },
+    {
+      "i": 13,
+      "status": 429,
+      "latency_ms": 5.778,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":871}"
+    },
+    {
+      "i": 14,
+      "status": 429,
+      "latency_ms": 4.263,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":865}"
+    },
+    {
+      "i": 15,
+      "status": 429,
+      "latency_ms": 4.799,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":860}"
+    },
+    {
+      "i": 16,
+      "status": 429,
+      "latency_ms": 3.826,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":857}"
+    },
+    {
+      "i": 17,
+      "status": 429,
+      "latency_ms": 3.123,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":853}"
+    },
+    {
+      "i": 18,
+      "status": 429,
+      "latency_ms": 3.438,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":850}"
+    },
+    {
+      "i": 19,
+      "status": 429,
+      "latency_ms": 3.761,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":846}"
+    },
+    {
+      "i": 20,
+      "status": 429,
+      "latency_ms": 3.214,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":842}"
+    },
+    {
+      "i": 21,
+      "status": 429,
+      "latency_ms": 3.002,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":839}"
+    },
+    {
+      "i": 22,
+      "status": 429,
+      "latency_ms": 3.741,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":835}"
+    },
+    {
+      "i": 23,
+      "status": 429,
+      "latency_ms": 2.972,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":832}"
+    },
+    {
+      "i": 24,
+      "status": 429,
+      "latency_ms": 3.781,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":829}"
+    },
+    {
+      "i": 25,
+      "status": 429,
+      "latency_ms": 3.885,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":824}"
+    },
+    {
+      "i": 26,
+      "status": 429,
+      "latency_ms": 4.047,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":820}"
+    },
+    {
+      "i": 27,
+      "status": 429,
+      "latency_ms": 3.371,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":817}"
+    },
+    {
+      "i": 28,
+      "status": 429,
+      "latency_ms": 3.335,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":813}"
+    },
+    {
+      "i": 29,
+      "status": 429,
+      "latency_ms": 4.016,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":810}"
+    },
+    {
+      "i": 30,
+      "status": 429,
+      "latency_ms": 4.487,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":805}"
+    },
+    {
+      "i": 31,
+      "status": 429,
+      "latency_ms": 3.881,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":801}"
+    },
+    {
+      "i": 32,
+      "status": 429,
+      "latency_ms": 3.438,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":797}"
+    },
+    {
+      "i": 33,
+      "status": 429,
+      "latency_ms": 3.196,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":794}"
+    },
+    {
+      "i": 34,
+      "status": 429,
+      "latency_ms": 2.94,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":791}"
+    },
+    {
+      "i": 35,
+      "status": 429,
+      "latency_ms": 3.404,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":788}"
+    },
+    {
+      "i": 36,
+      "status": 429,
+      "latency_ms": 3.198,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":784}"
+    },
+    {
+      "i": 37,
+      "status": 429,
+      "latency_ms": 3.011,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":781}"
+    },
+    {
+      "i": 38,
+      "status": 429,
+      "latency_ms": 3.308,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":778}"
+    },
+    {
+      "i": 39,
+      "status": 429,
+      "latency_ms": 3.758,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":774}"
+    },
+    {
+      "i": 40,
+      "status": 429,
+      "latency_ms": 4.132,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":770}"
+    },
+    {
+      "i": 41,
+      "status": 429,
+      "latency_ms": 6.211,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":765}"
+    },
+    {
+      "i": 42,
+      "status": 429,
+      "latency_ms": 4.211,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":759}"
+    },
+    {
+      "i": 43,
+      "status": 429,
+      "latency_ms": 5.115,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":754}"
+    },
+    {
+      "i": 44,
+      "status": 429,
+      "latency_ms": 3.202,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":750}"
+    },
+    {
+      "i": 45,
+      "status": 429,
+      "latency_ms": 3.19,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":747}"
+    },
+    {
+      "i": 46,
+      "status": 429,
+      "latency_ms": 3.848,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":743}"
+    },
+    {
+      "i": 47,
+      "status": 429,
+      "latency_ms": 3.204,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":740}"
+    },
+    {
+      "i": 48,
+      "status": 429,
+      "latency_ms": 3.315,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":736}"
+    },
+    {
+      "i": 49,
+      "status": 429,
+      "latency_ms": 3.659,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":732}"
+    },
+    {
+      "i": 50,
+      "status": 429,
+      "latency_ms": 4.716,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":729}"
+    },
+    {
+      "i": 51,
+      "status": 429,
+      "latency_ms": 3.945,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":724}"
+    },
+    {
+      "i": 52,
+      "status": 429,
+      "latency_ms": 3.279,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":720}"
+    },
+    {
+      "i": 53,
+      "status": 429,
+      "latency_ms": 3.725,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":716}"
+    },
+    {
+      "i": 54,
+      "status": 429,
+      "latency_ms": 3.032,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":713}"
+    },
+    {
+      "i": 55,
+      "status": 429,
+      "latency_ms": 3.562,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":710}"
+    },
+    {
+      "i": 56,
+      "status": 429,
+      "latency_ms": 3.395,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":706}"
+    },
+    {
+      "i": 57,
+      "status": 429,
+      "latency_ms": 3.331,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":703}"
+    },
+    {
+      "i": 58,
+      "status": 429,
+      "latency_ms": 3.242,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":699}"
+    },
+    {
+      "i": 59,
+      "status": 429,
+      "latency_ms": 3.116,
+      "source": "redis",
+      "policy": "user:tasks",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":696}"
+    }
+  ]
+}

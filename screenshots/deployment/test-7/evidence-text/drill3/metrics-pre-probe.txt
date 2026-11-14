@@ -1,0 +1,18 @@
+# pre-probe 2026-11-12T14:32:07Z
+scheduler_ratelimit_allowed_total{scope="global:ingress",source="redis"} 70
+scheduler_ratelimit_allowed_total{scope="login",source="redis"} 5
+scheduler_ratelimit_allowed_total{scope="user:tasks",source="redis"} 10
+scheduler_ratelimit_denied_total{scope="user:tasks",source="redis",reason="limit"} 50
+scheduler_ratelimit_fallback_active{scope="global:ingress"} 0
+scheduler_ratelimit_fallback_active{scope="login"} 0
+scheduler_ratelimit_fallback_active{scope="user:tasks"} 0
+scheduler_ratelimit_circuit_state{state="closed"} 1
+scheduler_ratelimit_circuit_state{state="open"} 0
+scheduler_ratelimit_circuit_state{state="half_open"} 0
+scheduler_ratelimit_latency_seconds_sum{scope="global:ingress",source="redis"} 0.030567764000000004
+scheduler_ratelimit_latency_seconds_count{scope="global:ingress",source="redis"} 70
+scheduler_ratelimit_latency_seconds_sum{scope="login",source="redis"} 0.003163274
+scheduler_ratelimit_latency_seconds_count{scope="login",source="redis"} 5
+scheduler_ratelimit_latency_seconds_sum{scope="user:tasks",source="redis"} 0.023582136000000004
+scheduler_ratelimit_latency_seconds_count{scope="user:tasks",source="redis"} 60
+scheduler_ratelimit_shards{scope="global:ingress"} 16

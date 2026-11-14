@@ -1,0 +1,31 @@
+PROMETHEUS ALERTS AT CAPTURE
+The two firing alerts are expected false positives in this lab.
+
+firing  RabbitMQQueueConsumersMissing  queue=scheduler.due  severity=critical  since=2026-11-11T10:06:27.583301485Z
+firing  RabbitMQQueueConsumersMissing  queue=scheduler.results  severity=critical  since=2026-11-12T14:19:57.583301485Z
+
+Why: the coordinator consumes scheduler.due and scheduler.results with
+channel.basic_get() pull loops, not basic_consume(). RabbitMQ therefore
+reports 0 consumers for those queues by design.
+  coordinator/internal/queue/due_consumer.py:381
+  coordinator/internal/queue/result_consumer.py:330
+
+RabbitMQ consumer counts (cluster-wide):
+=== RabbitMQ consumer counts (cluster-wide) ===
+Timeout: 60.0 seconds ...
+Listing queues for vhost / ...
+name	consumers
+scheduler.results	0
+scheduler.due	0
+scheduler.tasks	18
+scheduler.tasks.dlq	0
+
+=== Consumers by queue ===
+      1 queue_name
+     18 scheduler.tasks
+
+
+
+scheduler.tasks has 18 push consumers (9 workers x 2) and all 200-message,
+720-task and 717-task runs completed. Task flow is therefore healthy; the
+rule expression is too broad for pull-consumed queues.

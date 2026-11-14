@@ -1,0 +1,2 @@
+# pre 2026-11-12T14:32:06Z
+scheduler_ratelimit_shards{scope="global:ingress"} 16

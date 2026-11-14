@@ -1,0 +1,37 @@
+run_id=drill1-20261112T141121Z
+2026-11-12T14:14:30Z
+leader=172.31.5.27
++ Cluster: scheduler (7706851908036096019) --------+----+-----------+
+| Member | Host         | Role         | State     | TL | Lag in MB |
++--------+--------------+--------------+-----------+----+-----------+
+| node1  | 172.31.40.27 | Sync Standby | streaming |  2 |         0 |
+| node2  | 172.31.5.27  | Leader       | running   |  2 |           |
+| node3  | 172.31.20.4  | Replica      | streaming |  2 |         0 |
++--------+--------------+--------------+-----------+----+-----------+
+--- tasks by status ---
+completed|720
+--- executions for run ---
+720
+--- duplicate active executions ---
+0
+--- duplicate slots ---
+0
+--- outbox for run by status ---
+published|2160
+--- global outbox by status ---
+published|2175
+--- global timers by status ---
+published|725
+--- global tasks / executions ---
+tasks=725
+executions=725
+--- haproxy backends ---
+pg_primary_back,node1,0,0,0,0
+pg_primary_back,node2,0,0,5,5
+pg_primary_back,node3,0,0,0,6
+pg_primary_back,BACKEND,0,0,5,6
+pg_replica_back,node1,0,0,0,0
+pg_replica_back,node2,0,0,0,0
+pg_replica_back,node3,0,0,0,0
+pg_replica_back,BACKEND,0,0,0,0
+

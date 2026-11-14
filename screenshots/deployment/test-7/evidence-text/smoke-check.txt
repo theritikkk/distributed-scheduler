@@ -1,0 +1,25 @@
+ task_name  |  status   
+------------+-----------
+ smoke-0001 | completed
+ smoke-0002 | completed
+ smoke-0003 | completed
+ smoke-0004 | completed
+ smoke-0005 | completed
+(5 rows)
+
+ executions 
+------------
+          5
+(1 row)
+
+ outbox_published 
+------------------
+               15
+(1 row)
+
+ duplicate_active 
+------------------
+                0
+(1 row)
+
+

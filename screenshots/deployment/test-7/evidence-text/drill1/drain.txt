@@ -1,0 +1,3 @@
+drain rel=0 tasks=720 completed=704 failed=0
+drain rel=3 tasks=720 completed=717 failed=0
+drain rel=6 tasks=720 completed=720 failed=0

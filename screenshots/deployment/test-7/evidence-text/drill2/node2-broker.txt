@@ -1,0 +1,71 @@
+node2 rabbitmq leader-loss controller
+pre_queues:
+Timeout: 60.0 seconds ...
+Listing queues for vhost / ...
+name	leader	members	messages
+scheduler.results	rabbit@node2	[rabbit@node2, rabbit@node3, rabbit@node1]	0
+scheduler.tasks	rabbit@node2	[rabbit@node2, rabbit@node3, rabbit@node1]	200
+scheduler.due	rabbit@node1	[rabbit@node1, rabbit@node3, rabbit@node2]	0
+scheduler.tasks.dlq	rabbit@node3	[rabbit@node3, rabbit@node2, rabbit@node1]	0
+stop_epoch=1794493173
+stop_ts=2026-11-12T14:19:33Z
+Stopping rabbit application on node rabbit@node2 ...
+stop_returned_epoch=1794493175
+new_leader=rabbit@node1
+election_epoch=1794493175
+messages_ready=-1 messages_unacked=-1 members=3
+election_ts=2026-11-12T14:19:35Z
+restart_epoch=1794493203
+restart_ts=2026-11-12T14:20:03Z
+Starting node rabbit@node2 ...
+start_app_returned_epoch=1794493207
+status_ready_epoch=1794493208
+--- queues after restart ---
+Timeout: 60.0 seconds ...
+Listing queues for vhost / ...
+name	leader	members	messages	messages_ready	messages_unacknowledged
+scheduler.tasks.dlq	rabbit@node2	[rabbit@node3, rabbit@node2, rabbit@node1]	0	0	0
+scheduler.results	rabbit@node1	[rabbit@node2, rabbit@node3, rabbit@node1]	0	0	0
+scheduler.due	rabbit@node1	[rabbit@node1, rabbit@node3, rabbit@node2]	0	0	0
+scheduler.tasks	rabbit@node1	[rabbit@node2, rabbit@node3, rabbit@node1]	200	200	0
+--- cluster status ---
+Cluster status of node rabbit@node2 ...
+Basics
+
+Cluster name: rabbit@node2
+Total CPU cores available cluster-wide: 6
+
+Disk Nodes
+
+rabbit@node1
+rabbit@node2
+rabbit@node3
+
+Running Nodes
+
+rabbit@node1
+rabbit@node2
+rabbit@node3
+
+Versions
+
+rabbit@node2: RabbitMQ 3.13.7 on Erlang 26.2.5.16
+rabbit@node1: RabbitMQ 3.13.7 on Erlang 26.2.5.16
+rabbit@node3: RabbitMQ 3.13.7 on Erlang 26.2.5.16
+
+CPU Cores
+
+Node: rabbit@node2, available CPU cores: 2
+Node: rabbit@node1, available CPU cores: 2
+Node: rabbit@node3, available CPU cores: 2
+
+Maintenance status
+
+Node: rabbit@node2, status: not under maintenance
+Node: rabbit@node1, status: not under maintenance
+Node: rabbit@node3, status: not under maintenance
+
+Alarms
+
+(none)
+

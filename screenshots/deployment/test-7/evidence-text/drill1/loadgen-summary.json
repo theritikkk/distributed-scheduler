@@ -1,0 +1,20 @@
+{
+  "run_id": "drill1-20261112T141121Z",
+  "mode": "stream",
+  "base": "http://127.0.0.1:8081",
+  "prefix": "drill1-20261112T141121Z",
+  "started_at": "2026-11-12T14:11:22.299659Z",
+  "ended_at": "2026-11-12T14:14:22.036936Z",
+  "attempts": 720,
+  "created": 720,
+  "failed": 0,
+  "success_rate": 100.0,
+  "latency_ms": {
+    "p50": 11.793,
+    "p95": 15.034,
+    "p99": 22.212,
+    "max": 5044.363
+  },
+  "max_gap_ms": 5280.936,
+  "error_samples": []
+}

@@ -1,0 +1,24 @@
+run_id=drill4-20261112T143537Z
+2026-11-12T14:38:45Z
+--- per-node api-haproxy 8080 ---
+172.31.40.27:8080 -> 200
+172.31.5.27:8080 -> 200
+172.31.20.4:8080 -> 200
+--- tasks by status ---
+completed|717
+--- executions for run ---
+717
+--- duplicate active executions ---
+0
+--- duplicate slots ---
+0
+--- outbox for run ---
+published|2151
+--- global tasks / executions ---
+tasks=1753
+executions=1642
+--- haproxy api backend on node1 ---
+api_back,node1,UP,1,1
+api_back,node2,UP,1,1
+api_back,node3,UP,1,1
+api_back,BACKEND,UP,3,3

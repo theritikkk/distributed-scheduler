@@ -1,0 +1,748 @@
+data.aws_vpc.default: Reading...
+data.aws_ssm_parameter.al2023: Reading...
+data.aws_ssm_parameter.al2023: Read complete after 0s [id=/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64]
+data.aws_vpc.default: Read complete after 0s [id=vpc-0f6e193d8a1c07e60]
+data.aws_subnets.default: Reading...
+data.aws_subnets.default: Read complete after 0s [id=ap-south-1]
+data.aws_subnet.default["subnet-08dac57d7b4eb63ab"]: Reading...
+data.aws_subnet.default["subnet-0b8a3af3215863e5e"]: Reading...
+data.aws_subnet.default["subnet-0919c81370cb8d0ef"]: Reading...
+data.aws_subnet.default["subnet-0b8a3af3215863e5e"]: Read complete after 1s [id=subnet-0b8a3af3215863e5e]
+data.aws_subnet.default["subnet-0919c81370cb8d0ef"]: Read complete after 1s [id=subnet-0919c81370cb8d0ef]
+data.aws_subnet.default["subnet-08dac57d7b4eb63ab"]: Read complete after 1s [id=subnet-08dac57d7b4eb63ab]
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  + create
+
+Terraform will perform the following actions:
+
+  # aws_iam_instance_profile.instance will be created
+  + resource "aws_iam_instance_profile" "instance" {
+      + arn         = (known after apply)
+      + create_date = (known after apply)
+      + id          = (known after apply)
+      + name        = "scheduler-ha-lab-ssm"
+      + name_prefix = (known after apply)
+      + path        = "/"
+      + role        = "scheduler-ha-lab-ssm"
+      + tags_all    = (known after apply)
+      + unique_id   = (known after apply)
+    }
+
+  # aws_iam_role.instance will be created
+  + resource "aws_iam_role" "instance" {
+      + arn                   = (known after apply)
+      + assume_role_policy    = jsonencode(
+            {
+              + Statement = [
+                  + {
+                      + Action    = "sts:AssumeRole"
+                      + Effect    = "Allow"
+                      + Principal = {
+                          + Service = "ec2.amazonaws.com"
+                        }
+                    },
+                ]
+              + Version   = "2012-10-17"
+            }
+        )
+      + create_date           = (known after apply)
+      + force_detach_policies = false
+      + id                    = (known after apply)
+      + managed_policy_arns   = (known after apply)
+      + max_session_duration  = 3600
+      + name                  = "scheduler-ha-lab-ssm"
+      + name_prefix           = (known after apply)
+      + path                  = "/"
+      + tags                  = {
+          + "ManagedBy" = "terraform"
+          + "Phase"     = "6-ha-lab"
+          + "Project"   = "scheduler-ha-lab"
+        }
+      + tags_all              = {
+          + "ManagedBy" = "terraform"
+          + "Phase"     = "6-ha-lab"
+          + "Project"   = "scheduler-ha-lab"
+        }
+      + unique_id             = (known after apply)
+
+      + inline_policy (known after apply)
+    }
+
+  # aws_iam_role_policy_attachment.ssm will be created
+  + resource "aws_iam_role_policy_attachment" "ssm" {
+      + id         = (known after apply)
+      + policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+      + role       = "scheduler-ha-lab-ssm"
+    }
+
+  # aws_instance.node["node1"] will be created
+  + resource "aws_instance" "node" {
+      + ami                                  = (sensitive value)
+      + arn                                  = (known after apply)
+      + associate_public_ip_address          = true
+      + availability_zone                    = (known after apply)
+      + cpu_core_count                       = (known after apply)
+      + cpu_threads_per_core                 = (known after apply)
+      + disable_api_stop                     = (known after apply)
+      + disable_api_termination              = (known after apply)
+      + ebs_optimized                        = (known after apply)
+      + enable_primary_ipv6                  = (known after apply)
+      + get_password_data                    = false
+      + host_id                              = (known after apply)
+      + host_resource_group_arn              = (known after apply)
+      + iam_instance_profile                 = "scheduler-ha-lab-ssm"
+      + id                                   = (known after apply)
+      + instance_initiated_shutdown_behavior = (known after apply)
+      + instance_lifecycle                   = (known after apply)
+      + instance_state                       = (known after apply)
+      + instance_type                        = "m7i-flex.large"
+      + ipv6_address_count                   = (known after apply)
+      + ipv6_addresses                       = (known after apply)
+      + key_name                             = (known after apply)
+      + monitoring                           = (known after apply)
+      + outpost_arn                          = (known after apply)
+      + password_data                        = (known after apply)
+      + placement_group                      = (known after apply)
+      + placement_partition_number           = (known after apply)
+      + primary_network_interface_id         = (known after apply)
+      + private_dns                          = (known after apply)
+      + private_ip                           = (known after apply)
+      + public_dns                           = (known after apply)
+      + public_ip                            = (known after apply)
+      + secondary_private_ips                = (known after apply)
+      + security_groups                      = (known after apply)
+      + source_dest_check                    = true
+      + spot_instance_request_id             = (known after apply)
+      + subnet_id                            = "subnet-0919c81370cb8d0ef"
+      + tags                                 = {
+          + "ManagedBy" = "terraform"
+          + "Name"      = "scheduler-ha-lab-node1"
+          + "Phase"     = "6-ha-lab"
+          + "Project"   = "scheduler-ha-lab"
+        }
+      + tags_all                             = {
+          + "ManagedBy" = "terraform"
+          + "Name"      = "scheduler-ha-lab-node1"
+          + "Phase"     = "6-ha-lab"
+          + "Project"   = "scheduler-ha-lab"
+        }
+      + tenancy                              = (known after apply)
+      + user_data                            = "6dcee032ae00463876b21b2f62ee570106541b2a"
+      + user_data_base64                     = (known after apply)
+      + user_data_replace_on_change          = false
+      + vpc_security_group_ids               = (known after apply)
+
+      + capacity_reservation_specification (known after apply)
+
+      + cpu_options (known after apply)
+
+      + ebs_block_device (known after apply)
+
+      + enclave_options (known after apply)
+
+      + ephemeral_block_device (known after apply)
+
+      + instance_market_options {
+          + market_type = "spot"
+
+          + spot_options {
+              + instance_interruption_behavior = "terminate"
+              + max_price                      = (known after apply)
+              + spot_instance_type             = "one-time"
+              + valid_until                    = (known after apply)
+            }
+        }
+
+      + maintenance_options (known after apply)
+
+      + metadata_options {
+          + http_endpoint               = "enabled"
+          + http_protocol_ipv6          = "disabled"
+          + http_put_response_hop_limit = 2
+          + http_tokens                 = "required"
+          + instance_metadata_tags      = (known after apply)
+        }
+
+      + network_interface (known after apply)
+
+      + private_dns_name_options (known after apply)
+
+      + root_block_device {
+          + delete_on_termination = true
+          + device_name           = (known after apply)
+          + encrypted             = true
+          + iops                  = (known after apply)
+          + kms_key_id            = (known after apply)
+          + tags_all              = (known after apply)
+          + throughput            = (known after apply)
+          + volume_id             = (known after apply)
+          + volume_size           = 30
+          + volume_type           = "gp3"
+        }
+    }
+
+  # aws_instance.node["node2"] will be created
+  + resource "aws_instance" "node" {
+      + ami                                  = (sensitive value)
+      + arn                                  = (known after apply)
+      + associate_public_ip_address          = true
+      + availability_zone                    = (known after apply)
+      + cpu_core_count                       = (known after apply)
+      + cpu_threads_per_core                 = (known after apply)
+      + disable_api_stop                     = (known after apply)
+      + disable_api_termination              = (known after apply)
+      + ebs_optimized                        = (known after apply)
+      + enable_primary_ipv6                  = (known after apply)
+      + get_password_data                    = false
+      + host_id                              = (known after apply)
+      + host_resource_group_arn              = (known after apply)
+      + iam_instance_profile                 = "scheduler-ha-lab-ssm"
+      + id                                   = (known after apply)
+      + instance_initiated_shutdown_behavior = (known after apply)
+      + instance_lifecycle                   = (known after apply)
+      + instance_state                       = (known after apply)
+      + instance_type                        = "m7i-flex.large"
+      + ipv6_address_count                   = (known after apply)
+      + ipv6_addresses                       = (known after apply)
+      + key_name                             = (known after apply)
+      + monitoring                           = (known after apply)
+      + outpost_arn                          = (known after apply)
+      + password_data                        = (known after apply)
+      + placement_group                      = (known after apply)
+      + placement_partition_number           = (known after apply)
+      + primary_network_interface_id         = (known after apply)
+      + private_dns                          = (known after apply)
+      + private_ip                           = (known after apply)
+      + public_dns                           = (known after apply)
+      + public_ip                            = (known after apply)
+      + secondary_private_ips                = (known after apply)
+      + security_groups                      = (known after apply)
+      + source_dest_check                    = true
+      + spot_instance_request_id             = (known after apply)
+      + subnet_id                            = "subnet-0b8a3af3215863e5e"
+      + tags                                 = {
+          + "ManagedBy" = "terraform"
+          + "Name"      = "scheduler-ha-lab-node2"
+          + "Phase"     = "6-ha-lab"
+          + "Project"   = "scheduler-ha-lab"
+        }
+      + tags_all                             = {
+          + "ManagedBy" = "terraform"
+          + "Name"      = "scheduler-ha-lab-node2"
+          + "Phase"     = "6-ha-lab"
+          + "Project"   = "scheduler-ha-lab"
+        }
+      + tenancy                              = (known after apply)
+      + user_data                            = "6dcee032ae00463876b21b2f62ee570106541b2a"
+      + user_data_base64                     = (known after apply)
+      + user_data_replace_on_change          = false
+      + vpc_security_group_ids               = (known after apply)
+
+      + capacity_reservation_specification (known after apply)
+
+      + cpu_options (known after apply)
+
+      + ebs_block_device (known after apply)
+
+      + enclave_options (known after apply)
+
+      + ephemeral_block_device (known after apply)
+
+      + instance_market_options {
+          + market_type = "spot"
+
+          + spot_options {
+              + instance_interruption_behavior = "terminate"
+              + max_price                      = (known after apply)
+              + spot_instance_type             = "one-time"
+              + valid_until                    = (known after apply)
+            }
+        }
+
+      + maintenance_options (known after apply)
+
+      + metadata_options {
+          + http_endpoint               = "enabled"
+          + http_protocol_ipv6          = "disabled"
+          + http_put_response_hop_limit = 2
+          + http_tokens                 = "required"
+          + instance_metadata_tags      = (known after apply)
+        }
+
+      + network_interface (known after apply)
+
+      + private_dns_name_options (known after apply)
+
+      + root_block_device {
+          + delete_on_termination = true
+          + device_name           = (known after apply)
+          + encrypted             = true
+          + iops                  = (known after apply)
+          + kms_key_id            = (known after apply)
+          + tags_all              = (known after apply)
+          + throughput            = (known after apply)
+          + volume_id             = (known after apply)
+          + volume_size           = 30
+          + volume_type           = "gp3"
+        }
+    }
+
+  # aws_instance.node["node3"] will be created
+  + resource "aws_instance" "node" {
+      + ami                                  = (sensitive value)
+      + arn                                  = (known after apply)
+      + associate_public_ip_address          = true
+      + availability_zone                    = (known after apply)
+      + cpu_core_count                       = (known after apply)
+      + cpu_threads_per_core                 = (known after apply)
+      + disable_api_stop                     = (known after apply)
+      + disable_api_termination              = (known after apply)
+      + ebs_optimized                        = (known after apply)
+      + enable_primary_ipv6                  = (known after apply)
+      + get_password_data                    = false
+      + host_id                              = (known after apply)
+      + host_resource_group_arn              = (known after apply)
+      + iam_instance_profile                 = "scheduler-ha-lab-ssm"
+      + id                                   = (known after apply)
+      + instance_initiated_shutdown_behavior = (known after apply)
+      + instance_lifecycle                   = (known after apply)
+      + instance_state                       = (known after apply)
+      + instance_type                        = "m7i-flex.large"
+      + ipv6_address_count                   = (known after apply)
+      + ipv6_addresses                       = (known after apply)
+      + key_name                             = (known after apply)
+      + monitoring                           = (known after apply)
+      + outpost_arn                          = (known after apply)
+      + password_data                        = (known after apply)
+      + placement_group                      = (known after apply)
+      + placement_partition_number           = (known after apply)
+      + primary_network_interface_id         = (known after apply)
+      + private_dns                          = (known after apply)
+      + private_ip                           = (known after apply)
+      + public_dns                           = (known after apply)
+      + public_ip                            = (known after apply)
+      + secondary_private_ips                = (known after apply)
+      + security_groups                      = (known after apply)
+      + source_dest_check                    = true
+      + spot_instance_request_id             = (known after apply)
+      + subnet_id                            = "subnet-08dac57d7b4eb63ab"
+      + tags                                 = {
+          + "ManagedBy" = "terraform"
+          + "Name"      = "scheduler-ha-lab-node3"
+          + "Phase"     = "6-ha-lab"
+          + "Project"   = "scheduler-ha-lab"
+        }
+      + tags_all                             = {
+          + "ManagedBy" = "terraform"
+          + "Name"      = "scheduler-ha-lab-node3"
+          + "Phase"     = "6-ha-lab"
+          + "Project"   = "scheduler-ha-lab"
+        }
+      + tenancy                              = (known after apply)
+      + user_data                            = "6dcee032ae00463876b21b2f62ee570106541b2a"
+      + user_data_base64                     = (known after apply)
+      + user_data_replace_on_change          = false
+      + vpc_security_group_ids               = (known after apply)
+
+      + capacity_reservation_specification (known after apply)
+
+      + cpu_options (known after apply)
+
+      + ebs_block_device (known after apply)
+
+      + enclave_options (known after apply)
+
+      + ephemeral_block_device (known after apply)
+
+      + instance_market_options {
+          + market_type = "spot"
+
+          + spot_options {
+              + instance_interruption_behavior = "terminate"
+              + max_price                      = (known after apply)
+              + spot_instance_type             = "one-time"
+              + valid_until                    = (known after apply)
+            }
+        }
+
+      + maintenance_options (known after apply)
+
+      + metadata_options {
+          + http_endpoint               = "enabled"
+          + http_protocol_ipv6          = "disabled"
+          + http_put_response_hop_limit = 2
+          + http_tokens                 = "required"
+          + instance_metadata_tags      = (known after apply)
+        }
+
+      + network_interface (known after apply)
+
+      + private_dns_name_options (known after apply)
+
+      + root_block_device {
+          + delete_on_termination = true
+          + device_name           = (known after apply)
+          + encrypted             = true
+          + iops                  = (known after apply)
+          + kms_key_id            = (known after apply)
+          + tags_all              = (known after apply)
+          + throughput            = (known after apply)
+          + volume_id             = (known after apply)
+          + volume_size           = 30
+          + volume_type           = "gp3"
+        }
+    }
+
+  # aws_s3_bucket.artifacts will be created
+  + resource "aws_s3_bucket" "artifacts" {
+      + acceleration_status         = (known after apply)
+      + acl                         = (known after apply)
+      + arn                         = (known after apply)
+      + bucket                      = (known after apply)
+      + bucket_domain_name          = (known after apply)
+      + bucket_prefix               = (known after apply)
+      + bucket_regional_domain_name = (known after apply)
+      + force_destroy               = true
+      + hosted_zone_id              = (known after apply)
+      + id                          = (known after apply)
+      + object_lock_enabled         = (known after apply)
+      + policy                      = (known after apply)
+      + region                      = (known after apply)
+      + request_payer               = (known after apply)
+      + tags                        = {
+          + "ManagedBy" = "terraform"
+          + "Phase"     = "6-ha-lab"
+          + "Project"   = "scheduler-ha-lab"
+        }
+      + tags_all                    = {
+          + "ManagedBy" = "terraform"
+          + "Phase"     = "6-ha-lab"
+          + "Project"   = "scheduler-ha-lab"
+        }
+      + website_domain              = (known after apply)
+      + website_endpoint            = (known after apply)
+
+      + cors_rule (known after apply)
+
+      + grant (known after apply)
+
+      + lifecycle_rule (known after apply)
+
+      + logging (known after apply)
+
+      + object_lock_configuration (known after apply)
+
+      + replication_configuration (known after apply)
+
+      + server_side_encryption_configuration (known after apply)
+
+      + versioning (known after apply)
+
+      + website (known after apply)
+    }
+
+  # aws_s3_bucket_public_access_block.artifacts will be created
+  + resource "aws_s3_bucket_public_access_block" "artifacts" {
+      + block_public_acls       = true
+      + block_public_policy     = true
+      + bucket                  = (known after apply)
+      + id                      = (known after apply)
+      + ignore_public_acls      = true
+      + restrict_public_buckets = true
+    }
+
+  # aws_s3_bucket_server_side_encryption_configuration.artifacts will be created
+  + resource "aws_s3_bucket_server_side_encryption_configuration" "artifacts" {
+      + bucket = (known after apply)
+      + id     = (known after apply)
+
+      + rule {
+          + apply_server_side_encryption_by_default {
+              + sse_algorithm     = "AES256"
+                # (1 unchanged attribute hidden)
+            }
+        }
+    }
+
+  # aws_security_group.node1_operator will be created
+  + resource "aws_security_group" "node1_operator" {
+      + arn                    = (known after apply)
+      + description            = "Operator access to the API load balancer, monitoring, and RabbitMQ management on node1"
+      + egress                 = [
+          + {
+              + cidr_blocks      = [
+                  + "0.0.0.0/0",
+                ]
+              + from_port        = 0
+              + ipv6_cidr_blocks = []
+              + prefix_list_ids  = []
+              + protocol         = "-1"
+              + security_groups  = []
+              + self             = false
+              + to_port          = 0
+                # (1 unchanged attribute hidden)
+            },
+        ]
+      + id                     = (known after apply)
+      + ingress                = [
+          + {
+              + cidr_blocks      = [
+                  + "103.233.119.122/32",
+                ]
+              + description      = "Operator access to port 15672"
+              + from_port        = 15672
+              + ipv6_cidr_blocks = []
+              + prefix_list_ids  = []
+              + protocol         = "tcp"
+              + security_groups  = []
+              + self             = false
+              + to_port          = 15672
+            },
+          + {
+              + cidr_blocks      = [
+                  + "103.233.119.122/32",
+                ]
+              + description      = "Operator access to port 3001"
+              + from_port        = 3001
+              + ipv6_cidr_blocks = []
+              + prefix_list_ids  = []
+              + protocol         = "tcp"
+              + security_groups  = []
+              + self             = false
+              + to_port          = 3001
+            },
+          + {
+              + cidr_blocks      = [
+                  + "103.233.119.122/32",
+                ]
+              + description      = "Operator access to port 8081"
+              + from_port        = 8081
+              + ipv6_cidr_blocks = []
+              + prefix_list_ids  = []
+              + protocol         = "tcp"
+              + security_groups  = []
+              + self             = false
+              + to_port          = 8081
+            },
+          + {
+              + cidr_blocks      = [
+                  + "103.233.119.122/32",
+                ]
+              + description      = "Operator access to port 9091"
+              + from_port        = 9091
+              + ipv6_cidr_blocks = []
+              + prefix_list_ids  = []
+              + protocol         = "tcp"
+              + security_groups  = []
+              + self             = false
+              + to_port          = 9091
+            },
+        ]
+      + name                   = "scheduler-ha-lab-node1-operator"
+      + name_prefix            = (known after apply)
+      + owner_id               = (known after apply)
+      + revoke_rules_on_delete = false
+      + tags                   = {
+          + "ManagedBy" = "terraform"
+          + "Name"      = "scheduler-ha-lab-node1-operator"
+          + "Phase"     = "6-ha-lab"
+          + "Project"   = "scheduler-ha-lab"
+        }
+      + tags_all               = {
+          + "ManagedBy" = "terraform"
+          + "Name"      = "scheduler-ha-lab-node1-operator"
+          + "Phase"     = "6-ha-lab"
+          + "Project"   = "scheduler-ha-lab"
+        }
+      + vpc_id                 = "vpc-0f6e193d8a1c07e60"
+    }
+
+  # aws_security_group.nodes will be created
+  + resource "aws_security_group" "nodes" {
+      + arn                    = (known after apply)
+      + description            = "Scheduler HA lab nodes: cluster traffic only"
+      + egress                 = [
+          + {
+              + cidr_blocks      = [
+                  + "0.0.0.0/0",
+                ]
+              + from_port        = 0
+              + ipv6_cidr_blocks = []
+              + prefix_list_ids  = []
+              + protocol         = "-1"
+              + security_groups  = []
+              + self             = false
+              + to_port          = 0
+                # (1 unchanged attribute hidden)
+            },
+        ]
+      + id                     = (known after apply)
+      + ingress                = [
+          + {
+              + cidr_blocks      = [
+                  + "103.233.119.122/32",
+                ]
+              + description      = "API clients through the per-node HAProxy"
+              + from_port        = 8080
+              + ipv6_cidr_blocks = []
+              + prefix_list_ids  = []
+              + protocol         = "tcp"
+              + security_groups  = []
+              + self             = false
+              + to_port          = 8080
+            },
+          + {
+              + cidr_blocks      = [
+                  + "172.31.0.0/16",
+                ]
+              + description      = "API target health checks and VPC clients"
+              + from_port        = 3000
+              + ipv6_cidr_blocks = []
+              + prefix_list_ids  = []
+              + protocol         = "tcp"
+              + security_groups  = []
+              + self             = false
+              + to_port          = 3000
+            },
+          + {
+              + cidr_blocks      = []
+              + description      = "Cluster-internal traffic"
+              + from_port        = 0
+              + ipv6_cidr_blocks = []
+              + prefix_list_ids  = []
+              + protocol         = "-1"
+              + security_groups  = []
+              + self             = true
+              + to_port          = 0
+            },
+        ]
+      + name                   = "scheduler-ha-lab-nodes"
+      + name_prefix            = (known after apply)
+      + owner_id               = (known after apply)
+      + revoke_rules_on_delete = false
+      + tags                   = {
+          + "ManagedBy" = "terraform"
+          + "Phase"     = "6-ha-lab"
+          + "Project"   = "scheduler-ha-lab"
+        }
+      + tags_all               = {
+          + "ManagedBy" = "terraform"
+          + "Phase"     = "6-ha-lab"
+          + "Project"   = "scheduler-ha-lab"
+        }
+      + vpc_id                 = "vpc-0f6e193d8a1c07e60"
+    }
+
+  # random_id.suffix will be created
+  + resource "random_id" "suffix" {
+      + b64_std     = (known after apply)
+      + b64_url     = (known after apply)
+      + byte_length = 4
+      + dec         = (known after apply)
+      + hex         = (known after apply)
+      + id          = (known after apply)
+    }
+
+Plan: 12 to add, 0 to change, 0 to destroy.
+
+Changes to Outputs:
+  + allowed_cidr            = "103.233.119.122/32"
+  + api_url                 = (known after apply)
+  + api_urls                = {
+      + node1 = (known after apply)
+      + node2 = (known after apply)
+      + node3 = (known after apply)
+    }
+  + artifact_bucket         = (known after apply)
+  + node_availability_zones = {
+      + node1 = (known after apply)
+      + node2 = (known after apply)
+      + node3 = (known after apply)
+    }
+  + node_ids                = {
+      + node1 = (known after apply)
+      + node2 = (known after apply)
+      + node3 = (known after apply)
+    }
+  + node_private_ips        = {
+      + node1 = (known after apply)
+      + node2 = (known after apply)
+      + node3 = (known after apply)
+    }
+  + node_public_ips         = {
+      + node1 = (known after apply)
+      + node2 = (known after apply)
+      + node3 = (known after apply)
+    }
+  + ssm_commands            = {
+      + node1 = (known after apply)
+      + node2 = (known after apply)
+      + node3 = (known after apply)
+    }
+random_id.suffix: Creating...
+random_id.suffix: Creation complete after 0s [id=vDnoJw]
+aws_iam_role.instance: Creating...
+aws_security_group.nodes: Creating...
+aws_security_group.node1_operator: Creating...
+aws_s3_bucket.artifacts: Creating...
+aws_iam_role.instance: Creation complete after 2s [id=scheduler-ha-lab-ssm]
+aws_iam_role_policy_attachment.ssm: Creating...
+aws_iam_instance_profile.instance: Creating...
+aws_s3_bucket.artifacts: Creation complete after 2s [id=scheduler-ha-lab-artifacts-bc39e827]
+aws_s3_bucket_public_access_block.artifacts: Creating...
+aws_s3_bucket_server_side_encryption_configuration.artifacts: Creating...
+aws_s3_bucket_public_access_block.artifacts: Creation complete after 0s [id=scheduler-ha-lab-artifacts-bc39e827]
+aws_security_group.node1_operator: Creation complete after 2s [id=sg-00ea6373f9cc083a5]
+aws_security_group.nodes: Creation complete after 3s [id=sg-0d85ce2de817f5bb6]
+aws_s3_bucket_server_side_encryption_configuration.artifacts: Creation complete after 1s [id=scheduler-ha-lab-artifacts-bc39e827]
+aws_iam_role_policy_attachment.ssm: Creation complete after 1s [id=scheduler-ha-lab-ssm-20261111095556298600000001]
+aws_iam_instance_profile.instance: Creation complete after 8s [id=scheduler-ha-lab-ssm]
+aws_instance.node["node2"]: Creating...
+aws_instance.node["node1"]: Creating...
+aws_instance.node["node3"]: Creating...
+aws_instance.node["node1"]: Still creating... [00m10s elapsed]
+aws_instance.node["node2"]: Still creating... [00m10s elapsed]
+aws_instance.node["node3"]: Still creating... [00m10s elapsed]
+aws_instance.node["node1"]: Creation complete after 13s [id=i-04edb2bde1c4c2371]
+aws_instance.node["node2"]: Creation complete after 13s [id=i-0971d5c38b4cff21e]
+aws_instance.node["node3"]: Creation complete after 14s [id=i-0768416dc03bcd66d]
+
+Apply complete! Resources: 12 added, 0 changed, 0 destroyed.
+
+Outputs:
+
+allowed_cidr = "103.233.119.122/32"
+api_url = "http://13.207.2.119:8080"
+api_urls = {
+  "node1" = "http://13.207.2.119:8080"
+  "node2" = "http://15.206.211.232:8080"
+  "node3" = "http://65.0.118.42:8080"
+}
+artifact_bucket = "scheduler-ha-lab-artifacts-bc39e827"
+node_availability_zones = {
+  "node1" = "ap-south-1a"
+  "node2" = "ap-south-1b"
+  "node3" = "ap-south-1c"
+}
+node_ids = {
+  "node1" = "i-04edb2bde1c4c2371"
+  "node2" = "i-0971d5c38b4cff21e"
+  "node3" = "i-0768416dc03bcd66d"
+}
+node_private_ips = {
+  "node1" = "172.31.40.27"
+  "node2" = "172.31.5.27"
+  "node3" = "172.31.20.4"
+}
+node_public_ips = {
+  "node1" = "13.207.2.119"
+  "node2" = "15.206.211.232"
+  "node3" = "65.0.118.42"
+}
+ssm_commands = {
+  "node1" = "aws ssm start-session --target i-04edb2bde1c4c2371 --region ap-south-1"
+  "node2" = "aws ssm start-session --target i-0971d5c38b4cff21e --region ap-south-1"
+  "node3" = "aws ssm start-session --target i-0768416dc03bcd66d --region ap-south-1"
+}

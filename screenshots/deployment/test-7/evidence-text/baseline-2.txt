@@ -1,0 +1,82 @@
+
+===== REDIS REPLICATION (node1) =====
+# Replication
+role:master
+connected_slaves:2
+slave0:ip=172.31.20.4,port=6379,state=online,offset=106792,lag=1
+slave1:ip=172.31.5.27,port=6379,state=online,offset=106792,lag=1
+master_failover_state:no-failover
+master_replid:ad90bb20d2753207dbdb1845394f9fe820e210c8
+master_replid2:0000000000000000000000000000000000000000
+master_repl_offset:106792
+second_repl_offset:-1
+repl_backlog_active:1
+repl_backlog_size:1048576
+repl_backlog_first_byte_offset:1
+repl_backlog_histlen:106792
+
+===== REDIS SENTINEL MASTER (node1) =====
+172.31.40.27
+6379
+
+===== REDIS SENTINEL MASTERS (FLAGS) =====
+name
+scheduler
+ip
+172.31.40.27
+port
+6379
+--
+flags
+master
+--
+num-slaves
+2
+num-other-sentinels
+2
+quorum
+2
+
+===== PGBOUNCER CONFIG =====
+
+===== PGBOUNCER POOLS =====
+psql: error: connection to server on socket "/run/postgresql/.s.PGSQL.5432" failed: No such file or directory
+	Is the server running locally and accepting connections on that socket?
+
+===== HAPROXY BACKENDS =====
+# pxname,svname,status,weight,check_status,check_code
+pg_primary_back,node1,DOWN,1,L7STS,503
+pg_primary_back,node2,DOWN,1,L7STS,503
+pg_primary_back,node3,UP,1,L7OK,200
+pg_primary_back,BACKEND,UP,1,,
+pg_replica_back,node1,UP,1,L7OK,200
+pg_replica_back,node2,UP,1,L7OK,200
+pg_replica_back,node3,DOWN,1,L7STS,503
+pg_replica_back,BACKEND,UP,2,,
+api_back,node1,UP,1,L7OK,200
+api_back,node2,UP,1,L7OK,200
+api_back,node3,UP,1,L7OK,200
+api_back,BACKEND,UP,3,,
+rabbitmq_back,node1,UP,1,L4OK,
+rabbitmq_back,node2,UP,1,L4OK,
+rabbitmq_back,node3,UP,1,L4OK,
+rabbitmq_back,BACKEND,UP,3,,
+
+===== API HEALTH PER NODE =====
+172.31.40.27 health=200 ready=200
+172.31.5.27 health=200 ready=200
+172.31.20.4 health=200 ready=200
+
+===== NGINX =====
+ok
+ HTTP 200
+
+===== BASELINE ROW COUNTS =====
+tasks=0
+executions=0
+outbox_pending=0
+outbox_failed=0
+timers_pending=0
+timers_failed=0
+=== baseline-2 done ===
+

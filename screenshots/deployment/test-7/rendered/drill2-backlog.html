@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Drill 2 - RabbitMQ queue-leader loss with 200-message backlog</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 28px 32px; background: #0b1020; color: #d6e2f0;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+  header { border-bottom: 1px solid #22304a; padding-bottom: 14px; margin-bottom: 18px; }
+  h1 { font-size: 20px; margin: 0 0 6px; color: #ffffff; letter-spacing: .2px; }
+  .sub { color: #8fa6c4; font-size: 12.5px; }
+  .badge {
+    display: inline-block; margin-top: 10px; padding: 3px 9px; border-radius: 999px;
+    background: #12233b; border: 1px solid #294a72; color: #8cc8ff; font-size: 11.5px;
+  }
+  pre {
+    margin: 0; padding: 18px 20px; background: #070b14; border: 1px solid #1d2a40;
+    border-radius: 10px; font-size: 12.2px; line-height: 1.52; white-space: pre-wrap;
+    word-break: break-word; overflow-wrap: anywhere;
+  }
+  footer { margin-top: 14px; color: #61748e; font-size: 11.5px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Drill 2 - RabbitMQ queue-leader loss with 200-message backlog</h1>
+  <div class="sub">Backlog retained across leader loss, leader moved rabbit@node2 -&gt; rabbit@node1 in 2 s, all 200 completed exactly once</div>
+  <div class="badge">AWS HA lab &middot; ap-south-1 &middot; captured 2026-11-12 14:49:13Z</div>
+</header>
+<pre>DRILL 2 - RABBITMQ QUEUE-LEADER LOSS WITH 200-MESSAGE BACKLOG
+Injection: pause all 9 workers, submit 200 tasks, stop RabbitMQ app on node2
+
+--- pre-state ---
+run_id=drill2-20261112T141904Z
+2026-11-12T14:19:04Z
+backlog_queue_before:
+Timeout: 60.0 seconds ...
+Listing queues for vhost / ...
+name	type	leader	members	messages
+scheduler.due	quorum	rabbit@node1	[rabbit@node1, rabbit@node3, rabbit@node2]	0
+scheduler.tasks.dlq	quorum	rabbit@node3	[rabbit@node3, rabbit@node2, rabbit@node1]	0
+scheduler.results	quorum	rabbit@node2	[rabbit@node2, rabbit@node3, rabbit@node1]	0
+scheduler.tasks	quorum	rabbit@node2	[rabbit@node2, rabbit@node3, rabbit@node1]	0
+patroni:
++ Cluster: scheduler (7706851908036096019) --------+----+-----------+
+| Member | Host         | Role         | State     | TL | Lag in MB |
++--------+--------------+--------------+-----------+----+-----------+
+| node1  | 172.31.40.27 | Sync Standby | streaming |  2 |         0 |
+| node2  | 172.31.5.27  | Leader       | running   |  2 |           |
+| node3  | 172.31.20.4  | Replica      | streaming |  2 |         0 |
++--------+--------------+--------------+-----------+----+-----------+
+baseline_tasks=725
+baseline_executions=725
+
+
+--- backlog before the injection ---
+backlog_ready=200 at_epoch=1794493152
+Timeout: 60.0 seconds ...
+Listing queues for vhost / ...
+name	leader	messages	messages_ready	messages_unacknowledged
+scheduler.due	rabbit@node1	0	0	0
+scheduler.results	rabbit@node2	0	0	0
+scheduler.tasks	rabbit@node2	200	200	0
+scheduler.tasks.dlq	rabbit@node3	0	0	0
+
+
+--- broker controller (stop / leader election / restart) ---
+node2 rabbitmq leader-loss controller
+pre_queues:
+Timeout: 60.0 seconds ...
+Listing queues for vhost / ...
+name	leader	members	messages
+scheduler.results	rabbit@node2	[rabbit@node2, rabbit@node3, rabbit@node1]	0
+scheduler.tasks	rabbit@node2	[rabbit@node2, rabbit@node3, rabbit@node1]	200
+scheduler.due	rabbit@node1	[rabbit@node1, rabbit@node3, rabbit@node2]	0
+scheduler.tasks.dlq	rabbit@node3	[rabbit@node3, rabbit@node2, rabbit@node1]	0
+stop_epoch=1794493173
+stop_ts=2026-11-12T14:19:33Z
+Stopping rabbit application on node rabbit@node2 ...
+stop_returned_epoch=1794493175
+new_leader=rabbit@node1
+election_epoch=1794493175
+messages_ready=-1 messages_unacked=-1 members=3
+election_ts=2026-11-12T14:19:35Z
+restart_epoch=1794493203
+restart_ts=2026-11-12T14:20:03Z
+Starting node rabbit@node2 ...
+start_app_returned_epoch=1794493207
+status_ready_epoch=1794493208
+--- queues after restart ---
+Timeout: 60.0 seconds ...
+Listing queues for vhost / ...
+name	leader	members	messages	messages_ready	messages_unacknowledged
+scheduler.tasks.dlq	rabbit@node2	[rabbit@node3, rabbit@node2, rabbit@node1]	0	0	0
+scheduler.results	rabbit@node1	[rabbit@node2, rabbit@node3, rabbit@node1]	0	0	0
+scheduler.due	rabbit@node1	[rabbit@node1, rabbit@node3, rabbit@node2]	0	0	0
+scheduler.tasks	rabbit@node1	[rabbit@node2, rabbit@node3, rabbit@node1]	200	200	0
+--- cluster status ---
+Cluster status of node rabbit@node2 ...
+Basics
+
+Cluster name: rabbit@node2
+Total CPU cores available cluster-wide: 6
+
+Disk Nodes
+
+rabbit@node1
+rabbit@node2
+rabbit@node3
+
+Running Nodes
+
+rabbit@node1
+rabbit@node2
+rabbit@node3
+
+Versions
+
+rabbit@node2: RabbitMQ 3.13.7 on Erlang 26.2.5.16
+rabbit@node1: RabbitMQ 3.13.7 on Erlang 26.2.5.16
+rabbit@node3: RabbitMQ 3.13.7 on Erlang 26.2.5.16
+
+CPU Cores
+
+Node: rabbit@node2, available CPU cores: 2
+Node: rabbit@node1, available CPU cores: 2
+Node: rabbit@node3, available CPU cores: 2
+
+Maintenance status
+
+Node: rabbit@node2, status: not under maintenance
+Node: rabbit@node1, status: not under maintenance
+Node: rabbit@node3, status: not under maintenance
+
+Alarms
+
+(none)
+
+
+
+--- submission summary ---
+{
+  &quot;run_id&quot;: &quot;drill2-20261112T141904Z&quot;,
+  &quot;mode&quot;: &quot;burst&quot;,
+  &quot;base&quot;: &quot;http://127.0.0.1:8081&quot;,
+  &quot;prefix&quot;: &quot;drill2-20261112T141904Z&quot;,
+  &quot;started_at&quot;: &quot;2026-11-12T14:19:05.554182Z&quot;,
+  &quot;ended_at&quot;: &quot;2026-11-12T14:19:06.037883Z&quot;,
+  &quot;attempts&quot;: 200,
+  &quot;created&quot;: 200,
+  &quot;failed&quot;: 0,
+  &quot;success_rate&quot;: 100.0,
+  &quot;latency_ms&quot;: {
+    &quot;p50&quot;: 45.875,
+    &quot;p95&quot;: 94.141,
+    &quot;p99&quot;: 123.277,
+    &quot;max&quot;: 129.681
+  },
+  &quot;max_gap_ms&quot;: 19.732,
+  &quot;error_samples&quot;: []
+}
+
+
+--- final integrity ---
+--- tasks by status ---
+completed|200
+--- executions ---
+200
+--- duplicate active ---
+0
+--- duplicate slots ---
+0
+--- outbox for run ---
+published|600
+--- queues final ---
+Timeout: 60.0 seconds ...
+Listing queues for vhost / ...
+name	leader	members	messages	messages_ready	messages_unacknowledged
+scheduler.results	rabbit@node1	[rabbit@node2, rabbit@node3, rabbit@node1]	21	18	3
+scheduler.due	rabbit@node1	[rabbit@node1, rabbit@node3, rabbit@node2]	0	0	0
+scheduler.tasks	rabbit@node1	[rabbit@node2, rabbit@node3, rabbit@node1]	137	129	8
+scheduler.tasks.dlq	rabbit@node2	[rabbit@node3, rabbit@node2, rabbit@node1]	0	0	0
+--- cluster ---
+Cluster status of node rabbit@node1 ...
+Basics
+
+Cluster name: rabbit@node1
+Total CPU cores available cluster-wide: 6
+
+Disk Nodes
+
+rabbit@node1
+rabbit@node2
+rabbit@node3
+
+Running Nodes
+
+rabbit@node1
+rabbit@node2
+rabbit@node3
+
+Versions
+
+rabbit@node1: RabbitMQ 3.13.7 on Erlang 26.2.5.16
+rabbit@node2: RabbitMQ 3.13.7 on Erlang 26.2.5.16
+rabbit@node3: RabbitMQ 3.13.7 on Erlang 26.2.5.16
+
+CPU Cores
+
+Node: rabbit@node1, available CPU cores: 2
+Node: rabbit@node2, available CPU cores: 2
+Node: rabbit@node3, available CPU cores: 2
+
+Maintenance status
+
+Node: rabbit@node1, status: not under maintenance
+Node: rabbit@node2, status: not under maintenance
+Node: rabbit@node3, status: not under maintenance
+
+Alarms
+
+(none)
+
+--- patroni ---
++ Cluster: scheduler (7706851908036096019) --------+----+-----------+
+| Member | Host         | Role         | State     | TL | Lag in MB |
++--------+--------------+--------------+-----------+----+-----------+
+| node1  | 172.31.40.27 | Sync Standby | streaming |  2 |         0 |
+| node2  | 172.31.5.27  | Leader       | running   |  2 |           |
+| node3  | 172.31.20.4  | Replica      | streaming |  2 |         0 |
++--------+--------------+--------------+-----------+----+-----------+
+
+
+--- queues after the drain ---
+queue_drained_ts=2026-11-12T14:21:32Z
+Timeout: 60.0 seconds ...
+Listing queues for vhost / ...
+name	leader	messages	messages_ready	messages_unacknowledged
+scheduler.results	rabbit@node1	0	0	0
+scheduler.due	rabbit@node1	0	0	0
+scheduler.tasks	rabbit@node1	0	0	0
+scheduler.tasks.dlq	rabbit@node2	0	0	0
+</pre>
+<footer>Source: live three-node HA lab. Output shown verbatim from the captured command.</footer>
+</body>
+</html>

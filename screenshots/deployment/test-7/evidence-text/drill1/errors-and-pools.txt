@@ -1,0 +1,45 @@
+DRILL1_HAPROXY_BACKENDS
+# pxname,svname,status,weight,act
+pg_primary_back,node1,DOWN,1,1
+pg_primary_back,node2,UP,1,1
+pg_primary_back,node3,DOWN,1,1
+pg_primary_back,BACKEND,UP,1,1
+pg_replica_back,node1,UP,1,1
+pg_replica_back,node2,DOWN,1,1
+pg_replica_back,node3,UP,1,1
+pg_replica_back,BACKEND,UP,2,2
+DRILL1_PGBOUNCER_POOLS
+       database        |   user    | cl_active | cl_waiting | cl_active_cancel_req | cl_waiting_cancel_req | sv_active | sv_active_cancel | sv_being_canceled | sv_idle | sv_used | sv_tested | sv_login | maxwait | maxwait_us |  pool_mode  | load_balance_hosts 
+-----------------------+-----------+-----------+------------+----------------------+-----------------------+-----------+------------------+-------------------+---------+---------+-----------+----------+---------+------------+-------------+--------------------
+ distributed_scheduler | scheduler |         3 |          0 |                    0 |                     0 |         0 |                0 |                 0 |       2 |       3 |         0 |        0 |       0 |          0 | transaction | 
+ pgbouncer             | pgbouncer |         1 |          0 |                    0 |                     0 |         0 |                0 |                 0 |       0 |       0 |         0 |        0 |       0 |          0 | statement   | 
+(2 rows)
+
+DRILL1_API_ERRORS
+DRILL1_COORDINATOR_ERRORS
+2026-11-12 14:11:28,283 level=ERROR service=coordinator internal.queue.scheduled_event_poller scheduled event poller: cycle failed: Stream connection lost: BrokenPipeError(32, 'Broken pipe')
+2026-11-12 14:11:28,284 level=ERROR service=coordinator pika.adapters.blocking_connection BlockingConnection.close(200, 'Normal shutdown') called on closed connection.
+2026-11-12 14:11:28,658 level=ERROR service=coordinator pika.adapters.utils.io_services_utils _AsyncBaseTransport._produce() failed, aborting connection: error=BrokenPipeError(32, 'Broken pipe'); sock=<socket.socket fd=24, family=2, type=1, proto=6, laddr=('172.18.0.7', 54142)>; Caller's stack:
+2026-11-12 14:11:28,659 level=ERROR service=coordinator pika.adapters.base_connection connection_lost: StreamLostError: ("Stream connection lost: BrokenPipeError(32, 'Broken pipe')",)
+2026-11-12 14:11:28,659 level=ERROR service=coordinator pika.adapters.blocking_connection Unexpected connection close detected: StreamLostError: ("Stream connection lost: BrokenPipeError(32, 'Broken pipe')",)
+2026-11-12 14:11:28,659 level=WARNING service=coordinator internal.queue.outbox_relay outbox relay: broker connection failed id=39: Stream connection lost: BrokenPipeError(32, 'Broken pipe')
+2026-11-12 14:11:28,660 level=ERROR service=coordinator internal.queue.outbox_relay outbox relay: cycle failed: Stream connection lost: BrokenPipeError(32, 'Broken pipe')
+2026-11-12 14:11:28,660 level=ERROR service=coordinator pika.adapters.blocking_connection BlockingConnection.close(200, 'Normal shutdown') called on closed connection.
+2026-11-12 14:11:46,679 level=WARNING service=coordinator internal.queue.due_consumer due consumer transient error: connection already closed
+2026-11-12 14:11:47,146 level=ERROR service=coordinator internal.queue.outbox_relay outbox relay: cycle failed: connection already closed
+2026-11-12 14:11:48,166 level=ERROR service=coordinator internal.queue.outbox_relay outbox relay: cycle failed: connection already closed
+2026-11-12 14:11:48,560 level=ERROR service=coordinator internal.queue.reconciliation reconciliation: server closed the connection unexpectedly
+2026-11-12 14:11:48,561 level=ERROR service=coordinator pika.adapters.utils.io_services_utils Socket EOF; <socket.socket fd=32, family=2, type=1, proto=6, laddr=('172.18.0.7', 54168)>
+2026-11-12 14:11:48,561 level=ERROR service=coordinator pika.adapters.base_connection Transport indicated EOF.
+2026-11-12 14:11:48,562 level=ERROR service=coordinator pika.adapters.base_connection connection_lost: StreamLostError: ('Transport indicated EOF',)
+2026-11-12 14:11:48,562 level=ERROR service=coordinator pika.adapters.blocking_connection Unexpected connection close detected: StreamLostError: ('Transport indicated EOF',)
+2026-11-12 14:11:49,186 level=ERROR service=coordinator internal.queue.outbox_relay outbox relay: cycle failed: connection already closed
+2026-11-12 14:11:49,743 level=WARNING service=coordinator internal.queue.due_consumer due consumer transient error: connection already closed
+2026-11-12 14:11:50,210 level=ERROR service=coordinator internal.queue.outbox_relay outbox relay: cycle failed: connection already closed
+2026-11-12 14:11:51,230 level=ERROR service=coordinator internal.queue.outbox_relay outbox relay: cycle failed: connection already closed
+DRILL1_WORKER1_ERRORS
+2026-11-12 14:11:49,762 level=ERROR service=worker worker_id=node1-worker-1 worker slot node1-worker-1-2 consumer failed: connection already closed
+2026-11-12 14:11:49,786 level=ERROR service=worker worker_id=node1-worker-1 worker slot node1-worker-1-1 consumer failed: connection already closed
+2026-11-12 14:11:50,852 level=ERROR service=worker worker_id=node1-worker-1 worker slot node1-worker-1-2 consumer failed: connection already closed
+2026-11-12 14:11:50,883 level=ERROR service=worker worker_id=node1-worker-1 worker slot node1-worker-1-1 consumer failed: connection already closed
+

@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Patroni final state after all four drills</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 28px 32px; background: #0b1020; color: #d6e2f0;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+  header { border-bottom: 1px solid #22304a; padding-bottom: 14px; margin-bottom: 18px; }
+  h1 { font-size: 20px; margin: 0 0 6px; color: #ffffff; letter-spacing: .2px; }
+  .sub { color: #8fa6c4; font-size: 12.5px; }
+  .badge {
+    display: inline-block; margin-top: 10px; padding: 3px 9px; border-radius: 999px;
+    background: #12233b; border: 1px solid #294a72; color: #8cc8ff; font-size: 11.5px;
+  }
+  pre {
+    margin: 0; padding: 18px 20px; background: #070b14; border: 1px solid #1d2a40;
+    border-radius: 10px; font-size: 12.2px; line-height: 1.52; white-space: pre-wrap;
+    word-break: break-word; overflow-wrap: anywhere;
+  }
+  footer { margin-top: 14px; color: #61748e; font-size: 11.5px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Patroni final state after all four drills</h1>
+  <div class="sub">Leader node2, sync standby node1, replica node3; Redis master node3; RabbitMQ 3/3; all services healthy</div>
+  <div class="badge">AWS HA lab &middot; ap-south-1 &middot; captured 2026-11-12 14:49:13Z</div>
+</header>
+<pre>FINAL LAB STATE (post-drills)
+2026-11-12T14:47:36Z
+
+=== Patroni cluster ===
++ Cluster: scheduler (7706851908036096019) --------+----+-----------+
+| Member | Host         | Role         | State     | TL | Lag in MB |
++--------+--------------+--------------+-----------+----+-----------+
+| node1  | 172.31.40.27 | Sync Standby | streaming |  2 |         0 |
+| node2  | 172.31.5.27  | Leader       | running   |  2 |           |
+| node3  | 172.31.20.4  | Replica      | streaming |  2 |         0 |
++--------+--------------+--------------+-----------+----+-----------+
+
+=== Redis Sentinel master ===
+172.31.20.4:6379
+
+=== Redis replication (master node3) ===
+role:master
+connected_slaves:2
+slave0:ip=172.31.5.27,port=6379,state=online,offset=21645085,lag=1
+slave1:ip=172.31.40.27,port=6379,state=online,offset=21645085,lag=1
+master_failover_state:no-failover
+
+=== RabbitMQ queues ===
+Timeout: 60.0 seconds ...
+Listing queues for vhost / ...
+name	type	leader	members	messages	messages_ready	messages_unacknowledged
+scheduler.results	quorum	rabbit@node1	[rabbit@node2, rabbit@node3, rabbit@node1]	0	0	0
+scheduler.due	quorum	rabbit@node1	[rabbit@node1, rabbit@node3, rabbit@node2]	0	0	0
+scheduler.tasks	quorum	rabbit@node1	[rabbit@node2, rabbit@node3, rabbit@node1]	0	0	0
+scheduler.tasks.dlq	quorum	rabbit@node2	[rabbit@node3, rabbit@node2, rabbit@node1]	0	0	0
+
+=== HAProxy API backend (node1) ===
+api_back,node1,UP,1,1
+api_back,node2,UP,1,1
+api_back,node3,UP,1,1
+api_back,BACKEND,UP,3,3
+
+=== API health through node1 nginx :8081 ===
+health=200
+ready=200
+
+=== Rate limiting defaults restored ===
+RATE_LIMIT_ENABLED=false
+RATE_LIMIT_MODE=observe
+
+=== Application containers ===
+scheduler-ha-app-api-gateway-1	Up 14 minutes
+scheduler-ha-app-coordinator-1	Up 29 hours
+worker-1	Up 27 minutes
+worker-2	Up 27 minutes
+worker-3	Up 27 minutes
+
+=== Authoritative counts ===
+tasks=1753
+executions=1642
+outbox_pending=0
+outbox_failed=0
+timers_pending=111
+timers_failed=0
+duplicate_active=0
+duplicate_slots=0
+
+</pre>
+<footer>Source: live three-node HA lab. Output shown verbatim from the captured command.</footer>
+</body>
+</html>

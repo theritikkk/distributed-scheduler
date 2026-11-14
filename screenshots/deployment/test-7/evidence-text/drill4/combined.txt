@@ -1,0 +1,86 @@
+DRILL 4 - API NODE AND HAPROXY NODE FAILURE THROUGH NGINX
+Traffic: 720 requests over 180 s through node1 nginx :8081
+Injection A: stop node2 api-gateway at ~35 s (restore at ~80 s)
+Injection B: stop node3 HAProxy at ~75 s (restore at ~130 s)
+
+--- submission summary ---
+{
+  "run_id": "drill4-20261112T143537Z",
+  "mode": "stream",
+  "base": "http://127.0.0.1:8081",
+  "prefix": "drill4-20261112T143537Z",
+  "started_at": "2026-11-12T14:35:37.715856Z",
+  "ended_at": "2026-11-12T14:38:37.464108Z",
+  "attempts": 720,
+  "created": 717,
+  "failed": 3,
+  "success_rate": 99.58,
+  "latency_ms": {
+    "p50": 11.955,
+    "p95": 15.735,
+    "p99": 22.557,
+    "max": 15014.998
+  },
+  "max_gap_ms": 15247.943,
+  "error_samples": [
+    "timed out",
+    "<html>\r\n<head><title>502 Bad Gateway</title></head>\r\n<body>\r\n<center><h1>502 Bad Gateway</h1></center>\r\n<hr><center>nginx</center>\r\n</body>\r\n</html>\r\n",
+    "<html>\r\n<head><title>502 Bad Gateway</title></head>\r\n<body>\r\n<center><h1>502 Bad Gateway</h1></center>\r\n<hr><center>nginx</center>\r\n</body>\r\n</html>\r\n"
+  ]
+}
+
+
+--- node2 API controller ---
+node2 api-gateway stopped 2026-11-12T14:36:15Z, restarted 14:37:00Z,
+health 200 at 14:37:03Z. During the stop: local :3000 health = 000.
+
+--- node3 HAProxy controller ---
+node3 haproxy stopped 2026-11-12T14:36:55Z, container exited at ~14:37:05Z,
+restarted 14:37:50Z, health 200 at 14:37:52Z. During the stop: local :8080 = 000.
+
+--- nginx retry/error log ---
+2026/11/12 14:37:05 [error] 30#30: *1432 connect() failed (111: Connection refused) while connecting to upstream, client: 127.0.0.1, server: _, request: "POST /api/v1/tasks HTTP/1.1", upstream: "http://172.31.20.4:8080/api/v1/tasks", host: "127.0.0.1:8081"
+2026/11/12 14:37:06 [error] 29#29: *1435 connect() failed (111: Connection refused) while connecting to upstream, client: 127.0.0.1, server: _, request: "GET /health/ready HTTP/1.1", upstream: "http://172.31.20.4:8080/health/ready", host: "127.0.0.1:8081"
+2026/11/12 14:37:10 [error] 29#29: *1441 connect() failed (111: Connection refused) while connecting to upstream, client: 127.0.0.1, server: _, request: "GET /health/ready HTTP/1.1", upstream: "http://172.31.20.4:8080/health/ready", host: "127.0.0.1:8081"
+2026/11/12 14:37:10 [warn] 29#29: *1441 upstream server temporarily disabled while connecting to upstream, client: 127.0.0.1, server: _, request: "GET /health/ready HTTP/1.1", upstream: "http://172.31.20.4:8080/health/ready", host: "127.0.0.1:8081"
+2026/11/12 14:37:20 [error] 30#30: *1454 upstream prematurely closed connection while reading response header from upstream, client: 127.0.0.1, server: _, request: "POST /api/v1/tasks HTTP/1.1", upstream: "http://172.31.5.27:8080/api/v1/tasks", host: "127.0.0.1:8081"
+2026/11/12 14:37:21 [error] 30#30: *1459 connect() failed (111: Connection refused) while connecting to upstream, client: 127.0.0.1, server: _, request: "GET /health/ready HTTP/1.1", upstream: "http://172.31.20.4:8080/health/ready", host: "127.0.0.1:8081"
+2026/11/12 14:37:21 [warn] 30#30: *1459 upstream server temporarily disabled while connecting to upstream, client: 127.0.0.1, server: _, request: "GET /health/ready HTTP/1.1", upstream: "http://172.31.20.4:8080/health/ready", host: "127.0.0.1:8081"
+2026/11/12 14:37:21 [error] 30#30: *1456 upstream prematurely closed connection while reading response header from upstream, client: 127.0.0.1, server: _, request: "POST /api/v1/tasks HTTP/1.1", upstream: "http://172.31.40.27:8080/api/v1/tasks", host: "127.0.0.1:8081"
+2026/11/12 14:37:21 [error] 29#29: *1477 connect() failed (111: Connection refused) while connecting to upstream, client: 127.0.0.1, server: _, request: "POST /api/v1/tasks HTTP/1.1", upstream: "http://172.31.20.4:8080/api/v1/tasks", host: "127.0.0.1:8081"
+2026/11/12 14:37:21 [warn] 29#29: *1477 upstream server temporarily disabled while connecting to upstream, client: 127.0.0.1, server: _, request: "POST /api/v1/tasks HTTP/1.1", upstream: "http://172.31.20.4:8080/api/v1/tasks", host: "127.0.0.1:8081"
+2026/11/12 14:37:32 [error] 29#29: *1578 connect() failed (111: Connection refused) while connecting to upstream, client: 127.0.0.1, server: _, request: "POST /api/v1/tasks HTTP/1.1", upstream: "http://172.31.20.4:8080/api/v1/tasks", host: "127.0.0.1:8081"
+2026/11/12 14:37:32 [warn] 29#29: *1578 upstream server temporarily disabled while connecting to upstream, client: 127.0.0.1, server: _, request: "POST /api/v1/tasks HTTP/1.1", upstream: "http://172.31.20.4:8080/api/v1/tasks", host: "127.0.0.1:8081"
+2026/11/12 14:37:34 [error] 30#30: *1590 connect() failed (111: Connection refused) while connecting to upstream, client: 127.0.0.1, server: _, request: "POST /api/v1/tasks HTTP/1.1", upstream: "http://172.31.20.4:8080/api/v1/tasks", host: "127.0.0.1:8081"
+2026/11/12 14:37:34 [warn] 30#30: *1590 upstream server temporarily disabled while connecting to upstream, client: 127.0.0.1, server: _, request: "POST /api/v1/tasks HTTP/1.1", upstream: "http://172.31.20.4:8080/api/v1/tasks", host: "127.0.0.1:8081"
+2026/11/12 14:37:44 [error] 29#29: *1641 connect() failed (111: Connection refused) while connecting to upstream, client: 127.0.0.1, server: _, request: "POST /api/v1/tasks HTTP/1.1", upstream: "http://172.31.20.4:8080/api/v1/tasks", host: "127.0.0.1:8081"
+2026/11/12 14:37:44 [warn] 29#29: *1641 upstream server temporarily disabled while connecting to upstream, client: 127.0.0.1, server: _, request: "POST /api/v1/tasks HTTP/1.1", upstream: "http://172.31.20.4:8080/api/v1/tasks", host: "127.0.0.1:8081"
+2026/11/12 14:37:48 [error] 30#30: *1657 connect() failed (111: Connection refused) while connecting to upstream, client: 127.0.0.1, server: _, request: "POST /api/v1/tasks HTTP/1.1", upstream: "http://172.31.20.4:8080/api/v1/tasks", host: "127.0.0.1:8081"
+2026/11/12 14:37:48 [warn] 30#30: *1657 upstream server temporarily disabled while connecting to upstream, client: 127.0.0.1, server: _, request: "POST /api/v1/tasks HTTP/1.1", upstream: "http://172.31.20.4:8080/api/v1/tasks", host: "127.0.0.1:8081"
+
+
+--- final integrity ---
+run_id=drill4-20261112T143537Z
+2026-11-12T14:38:45Z
+--- per-node api-haproxy 8080 ---
+172.31.40.27:8080 -> 200
+172.31.5.27:8080 -> 200
+172.31.20.4:8080 -> 200
+--- tasks by status ---
+completed|717
+--- executions for run ---
+717
+--- duplicate active executions ---
+0
+--- duplicate slots ---
+0
+--- outbox for run ---
+published|2151
+--- global tasks / executions ---
+tasks=1753
+executions=1642
+--- haproxy api backend on node1 ---
+api_back,node1,UP,1,1
+api_back,node2,UP,1,1
+api_back,node3,UP,1,1
+api_back,BACKEND,UP,3,3

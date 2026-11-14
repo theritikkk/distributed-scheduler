@@ -1,0 +1,20 @@
+run_id=drill2-20261112T141904Z
+2026-11-12T14:19:04Z
+backlog_queue_before:
+Timeout: 60.0 seconds ...
+Listing queues for vhost / ...
+name	type	leader	members	messages
+scheduler.due	quorum	rabbit@node1	[rabbit@node1, rabbit@node3, rabbit@node2]	0
+scheduler.tasks.dlq	quorum	rabbit@node3	[rabbit@node3, rabbit@node2, rabbit@node1]	0
+scheduler.results	quorum	rabbit@node2	[rabbit@node2, rabbit@node3, rabbit@node1]	0
+scheduler.tasks	quorum	rabbit@node2	[rabbit@node2, rabbit@node3, rabbit@node1]	0
+patroni:
++ Cluster: scheduler (7706851908036096019) --------+----+-----------+
+| Member | Host         | Role         | State     | TL | Lag in MB |
++--------+--------------+--------------+-----------+----+-----------+
+| node1  | 172.31.40.27 | Sync Standby | streaming |  2 |         0 |
+| node2  | 172.31.5.27  | Leader       | running   |  2 |           |
+| node3  | 172.31.20.4  | Replica      | streaming |  2 |         0 |
++--------+--------------+--------------+-----------+----+-----------+
+baseline_tasks=725
+baseline_executions=725

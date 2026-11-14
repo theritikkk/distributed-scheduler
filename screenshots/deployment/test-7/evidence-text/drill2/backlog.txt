@@ -1,0 +1,8 @@
+backlog_ready=200 at_epoch=1794493152
+Timeout: 60.0 seconds ...
+Listing queues for vhost / ...
+name	leader	messages	messages_ready	messages_unacknowledged
+scheduler.due	rabbit@node1	0	0	0
+scheduler.results	rabbit@node2	0	0	0
+scheduler.tasks	rabbit@node2	200	200	0
+scheduler.tasks.dlq	rabbit@node3	0	0	0

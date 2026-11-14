@@ -1,0 +1,157 @@
+{
+  "run_id": "drill3-20261112T143206Z",
+  "base": "http://127.0.0.1:3000",
+  "old_master": "172.31.40.27:6379",
+  "user_pre": "drill3b-pre-1794493926-43206Z@example.com",
+  "user_outage_slow": "drill3b-outage_slow-1794493927-43206Z@example.com",
+  "user_outage_burst": "drill3b-outage_burst-1794493927-43206Z@example.com",
+  "user_promoted": "drill3b-promoted-1794493927-43206Z@example.com",
+  "user_settled": "drill3b-settled-1794493927-43206Z@example.com",
+  "phase_pre": {
+    "phase": "pre",
+    "attempts": 60,
+    "interval_seconds": 0,
+    "status_counts": {
+      "201": 10,
+      "429": 50
+    },
+    "allowed_2xx": 10,
+    "denied_429": 50,
+    "server_5xx": 0,
+    "network_errors": 0,
+    "sources": [
+      "redis"
+    ],
+    "policies": [
+      "user:tasks"
+    ],
+    "latency_ms": {
+      "p50": 3.593,
+      "max": 19.851
+    },
+    "retry_after_samples": [
+      "1"
+    ]
+  },
+  "stop_epoch": 1794493929.112545,
+  "stop_ts": "2026-11-12T14:32:09Z",
+  "stop_result": [
+    "Container scheduler-ha-data-redis-1 Stopping ",
+    " Container scheduler-ha-data-redis-1 Stopped"
+  ],
+  "outage_health": {
+    "health": 200,
+    "ready": 200,
+    "ready_body": "{\"status\":\"ready\",\"service\":\"api-gateway\"}"
+  },
+  "phase_outage_slow": {
+    "phase": "outage_slow",
+    "attempts": 60,
+    "interval_seconds": 0.1,
+    "status_counts": {
+      "201": 8,
+      "429": 52
+    },
+    "allowed_2xx": 8,
+    "denied_429": 52,
+    "server_5xx": 0,
+    "network_errors": 0,
+    "sources": [
+      "local"
+    ],
+    "policies": [
+      "global:ingress",
+      "user:tasks"
+    ],
+    "latency_ms": {
+      "p50": 2.564,
+      "max": 17.762
+    },
+    "retry_after_samples": [
+      "1"
+    ]
+  },
+  "phase_outage_burst": {
+    "phase": "outage_burst",
+    "attempts": 40,
+    "interval_seconds": 0,
+    "status_counts": {
+      "429": 40
+    },
+    "allowed_2xx": 0,
+    "denied_429": 40,
+    "server_5xx": 0,
+    "network_errors": 0,
+    "sources": [
+      "local"
+    ],
+    "policies": [
+      "global:ingress"
+    ],
+    "latency_ms": {
+      "p50": 1.909,
+      "max": 4.806
+    },
+    "retry_after_samples": [
+      "1"
+    ]
+  },
+  "promoted_master": "172.31.20.4:6379",
+  "promotion_seconds": 5.95,
+  "promotion_ts": "2026-11-12T14:32:16Z",
+  "proxy_follow_seconds": 6.96,
+  "phase_promoted": {
+    "phase": "promoted",
+    "attempts": 30,
+    "interval_seconds": 0.1,
+    "status_counts": {
+      "201": 4,
+      "429": 26
+    },
+    "allowed_2xx": 4,
+    "denied_429": 26,
+    "server_5xx": 0,
+    "network_errors": 0,
+    "sources": [
+      "local"
+    ],
+    "policies": [
+      "global:ingress",
+      "user:tasks"
+    ],
+    "latency_ms": {
+      "p50": 2.338,
+      "max": 13.642
+    },
+    "retry_after_samples": [
+      "1"
+    ]
+  },
+  "phase_settled": {
+    "phase": "settled",
+    "attempts": 60,
+    "interval_seconds": 0,
+    "status_counts": {
+      "201": 10,
+      "429": 50
+    },
+    "allowed_2xx": 10,
+    "denied_429": 50,
+    "server_5xx": 0,
+    "network_errors": 0,
+    "sources": [
+      "redis"
+    ],
+    "policies": [
+      "user:tasks"
+    ],
+    "latency_ms": {
+      "p50": 3.75,
+      "max": 18.24
+    },
+    "retry_after_samples": [
+      "1"
+    ]
+  },
+  "redis_rejoin_seconds": 70.39
+}

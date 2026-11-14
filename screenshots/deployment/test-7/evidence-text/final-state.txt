@@ -1,0 +1,62 @@
+FINAL LAB STATE (post-drills)
+2026-11-12T14:47:36Z
+
+=== Patroni cluster ===
++ Cluster: scheduler (7706851908036096019) --------+----+-----------+
+| Member | Host         | Role         | State     | TL | Lag in MB |
++--------+--------------+--------------+-----------+----+-----------+
+| node1  | 172.31.40.27 | Sync Standby | streaming |  2 |         0 |
+| node2  | 172.31.5.27  | Leader       | running   |  2 |           |
+| node3  | 172.31.20.4  | Replica      | streaming |  2 |         0 |
++--------+--------------+--------------+-----------+----+-----------+
+
+=== Redis Sentinel master ===
+172.31.20.4:6379
+
+=== Redis replication (master node3) ===
+role:master
+connected_slaves:2
+slave0:ip=172.31.5.27,port=6379,state=online,offset=21645085,lag=1
+slave1:ip=172.31.40.27,port=6379,state=online,offset=21645085,lag=1
+master_failover_state:no-failover
+
+=== RabbitMQ queues ===
+Timeout: 60.0 seconds ...
+Listing queues for vhost / ...
+name	type	leader	members	messages	messages_ready	messages_unacknowledged
+scheduler.results	quorum	rabbit@node1	[rabbit@node2, rabbit@node3, rabbit@node1]	0	0	0
+scheduler.due	quorum	rabbit@node1	[rabbit@node1, rabbit@node3, rabbit@node2]	0	0	0
+scheduler.tasks	quorum	rabbit@node1	[rabbit@node2, rabbit@node3, rabbit@node1]	0	0	0
+scheduler.tasks.dlq	quorum	rabbit@node2	[rabbit@node3, rabbit@node2, rabbit@node1]	0	0	0
+
+=== HAProxy API backend (node1) ===
+api_back,node1,UP,1,1
+api_back,node2,UP,1,1
+api_back,node3,UP,1,1
+api_back,BACKEND,UP,3,3
+
+=== API health through node1 nginx :8081 ===
+health=200
+ready=200
+
+=== Rate limiting defaults restored ===
+RATE_LIMIT_ENABLED=false
+RATE_LIMIT_MODE=observe
+
+=== Application containers ===
+scheduler-ha-app-api-gateway-1	Up 14 minutes
+scheduler-ha-app-coordinator-1	Up 29 hours
+worker-1	Up 27 minutes
+worker-2	Up 27 minutes
+worker-3	Up 27 minutes
+
+=== Authoritative counts ===
+tasks=1753
+executions=1642
+outbox_pending=0
+outbox_failed=0
+timers_pending=111
+timers_failed=0
+duplicate_active=0
+duplicate_slots=0
+

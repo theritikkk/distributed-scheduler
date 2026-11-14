@@ -1,0 +1,35 @@
+[
+    {
+        "id": "i-0768416dc03bcd66d",
+        "type": "m7i-flex.large",
+        "state": "running",
+        "az": "ap-south-1c",
+        "private": "172.31.20.4",
+        "public": "65.0.118.42",
+        "lifecycle": "spot",
+        "spot": "sir-ex8fp39j",
+        "launch": "2026-11-11T09:56:06+00:00"
+    },
+    {
+        "id": "i-04edb2bde1c4c2371",
+        "type": "m7i-flex.large",
+        "state": "running",
+        "az": "ap-south-1a",
+        "private": "172.31.40.27",
+        "public": "13.207.2.119",
+        "lifecycle": "spot",
+        "spot": "sir-r2gqncrj",
+        "launch": "2026-11-11T09:56:05+00:00"
+    },
+    {
+        "id": "i-0971d5c38b4cff21e",
+        "type": "m7i-flex.large",
+        "state": "running",
+        "az": "ap-south-1b",
+        "private": "172.31.5.27",
+        "public": "15.206.211.232",
+        "lifecycle": "spot",
+        "spot": "sir-a7gzqsfg",
+        "launch": "2026-11-11T09:56:05+00:00"
+    }
+]

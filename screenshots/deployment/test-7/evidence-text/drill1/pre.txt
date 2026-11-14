@@ -1,0 +1,18 @@
+run_id=drill1-20261112T141121Z
+2026-11-12T14:11:21Z
+leader=172.31.20.4
++ Cluster: scheduler (7706851908036096019) --------+----+-----------+
+| Member | Host         | Role         | State     | TL | Lag in MB |
++--------+--------------+--------------+-----------+----+-----------+
+| node1  | 172.31.40.27 | Replica      | streaming |  1 |         0 |
+| node2  | 172.31.5.27  | Sync Standby | streaming |  1 |         0 |
+| node3  | 172.31.20.4  | Leader       | running   |  1 |           |
++--------+--------------+--------------+-----------+----+-----------+
+--- pre counts ---
+tasks=5
+executions=5
+outbox_pending=0
+outbox_failed=0
+timers_pending=0
+timers_failed=0
+loadgen_start_epoch=1794492681

@@ -1,0 +1,178 @@
+DRILL 1 - POSTGRESQL PRIMARY LOSS
+Injection: docker compose stop patroni on node3 (the Patroni leader)
+
+--- leader-loss controller ---
+drill1 leader-loss controller on node3
+pre_leader=172.31.20.4
+pre_role_node3=primary running 1
+waiting 25s for the node1 task stream to establish...
+stop_epoch=1794492706
+stop_ts=2026-11-12T14:11:46Z
+ Container scheduler-ha-data-patroni-1 Stopping 
+ Container scheduler-ha-data-patroni-1 Stopped 
+stop_returned_ts=2026-11-12T14:11:47Z
+container_state=exited
+promoted_leader=172.31.5.27
+promotion_epoch=1794492707
+promotion_seconds=1
+promotion_ts=2026-11-12T14:11:47Z
+promoted_role=primary running 2
+--- HAProxy on node3 after promotion ---
+pg_primary_back,node1,0,0,0,0
+pg_primary_back,node2,0,0,0,0
+pg_primary_back,node3,0,0,0,6
+pg_primary_back,BACKEND,0,0,0,6
+pg_replica_back,node1,0,0,0,0
+pg_replica_back,node2,0,0,0,0
+pg_replica_back,node3,0,0,0,0
+pg_replica_back,BACKEND,0,0,0,0
+--- waiting 30s before restarting node3 Patroni ---
+restart_epoch=1794492737
+restart_ts=2026-11-12T14:12:17Z
+ Container scheduler-ha-data-patroni-1 Starting 
+ Container scheduler-ha-data-patroni-1 Started 
+rejoin_ok epoch=1794492739 ts=2026-11-12T14:12:19Z role=replica running 2
+joined=1
+final_leader=172.31.5.27
+final_role_node3=replica running 2
++ Cluster: scheduler (7706851908036096019) --------+----+-----------+
+| Member | Host         | Role         | State     | TL | Lag in MB |
++--------+--------------+--------------+-----------+----+-----------+
+| node1  | 172.31.40.27 | Sync Standby | streaming |  2 |         0 |
+| node2  | 172.31.5.27  | Leader       | running   |  2 |           |
+| node3  | 172.31.20.4  | Replica      | streaming |  2 |         0 |
++--------+--------------+--------------+-----------+----+-----------+
+
+
+
+--- stream summary (JavaScript/Node load generator) ---
+{
+  "run_id": "drill1-20261112T141121Z",
+  "mode": "stream",
+  "base": "http://127.0.0.1:8081",
+  "prefix": "drill1-20261112T141121Z",
+  "started_at": "2026-11-12T14:11:22.299659Z",
+  "ended_at": "2026-11-12T14:14:22.036936Z",
+  "attempts": 720,
+  "created": 720,
+  "failed": 0,
+  "success_rate": 100.0,
+  "latency_ms": {
+    "p50": 11.793,
+    "p95": 15.034,
+    "p99": 22.212,
+    "max": 5044.363
+  },
+  "max_gap_ms": 5280.936,
+  "error_samples": []
+}
+
+
+--- per-second timeline around the failover (rel = seconds since stream start) ---
+rel  leader         health ready tasks completed executions
+ 22  172.31.20.4    200   200    87    64        65
+ 25  172.31.20.4    200   200    96    72        73
+ 27  172.31.5.27    200   200    97    73        76
+ 30  172.31.5.27    200   200    97    73        76
+ 33  172.31.5.27    200   200    97    73        76
+ 35  172.31.5.27    200   200    97    73        76
+ 37  172.31.5.27    200   200   145   123       123
+ 39  172.31.5.27    200   200   154   131       131
+ 41  172.31.5.27    200   200   163   139       143
+
+--- drain after the 180 s stream ended ---
+drain rel=0 tasks=720 completed=704 failed=0
+drain rel=3 tasks=720 completed=717 failed=0
+drain rel=6 tasks=720 completed=720 failed=0
+
+
+--- final integrity ---
+run_id=drill1-20261112T141121Z
+2026-11-12T14:14:30Z
+leader=172.31.5.27
++ Cluster: scheduler (7706851908036096019) --------+----+-----------+
+| Member | Host         | Role         | State     | TL | Lag in MB |
++--------+--------------+--------------+-----------+----+-----------+
+| node1  | 172.31.40.27 | Sync Standby | streaming |  2 |         0 |
+| node2  | 172.31.5.27  | Leader       | running   |  2 |           |
+| node3  | 172.31.20.4  | Replica      | streaming |  2 |         0 |
++--------+--------------+--------------+-----------+----+-----------+
+--- tasks by status ---
+completed|720
+--- executions for run ---
+720
+--- duplicate active executions ---
+0
+--- duplicate slots ---
+0
+--- outbox for run by status ---
+published|2160
+--- global outbox by status ---
+published|2175
+--- global timers by status ---
+published|725
+--- global tasks / executions ---
+tasks=725
+executions=725
+--- haproxy backends ---
+pg_primary_back,node1,0,0,0,0
+pg_primary_back,node2,0,0,5,5
+pg_primary_back,node3,0,0,0,6
+pg_primary_back,BACKEND,0,0,5,6
+pg_replica_back,node1,0,0,0,0
+pg_replica_back,node2,0,0,0,0
+pg_replica_back,node3,0,0,0,0
+pg_replica_back,BACKEND,0,0,0,0
+
+
+
+--- HAProxy backends, PgBouncer pools, and error scans at the end of the drill ---
+
+[HAPROXY BACKENDS]
+# pxname,svname,status,weight,act
+pg_primary_back,node1,DOWN,1,1
+pg_primary_back,node2,UP,1,1
+pg_primary_back,node3,DOWN,1,1
+pg_primary_back,BACKEND,UP,1,1
+pg_replica_back,node1,UP,1,1
+pg_replica_back,node2,DOWN,1,1
+pg_replica_back,node3,UP,1,1
+pg_replica_back,BACKEND,UP,2,2
+
+[PGBOUNCER POOLS]
+       database        |   user    | cl_active | cl_waiting | cl_active_cancel_req | cl_waiting_cancel_req | sv_active | sv_active_cancel | sv_being_canceled | sv_idle | sv_used | sv_tested | sv_login | maxwait | maxwait_us |  pool_mode  | load_balance_hosts 
+-----------------------+-----------+-----------+------------+----------------------+-----------------------+-----------+------------------+-------------------+---------+---------+-----------+----------+---------+------------+-------------+--------------------
+ distributed_scheduler | scheduler |         3 |          0 |                    0 |                     0 |         0 |                0 |                 0 |       2 |       3 |         0 |        0 |       0 |          0 | transaction | 
+ pgbouncer             | pgbouncer |         1 |          0 |                    0 |                     0 |         0 |                0 |                 0 |       0 |       0 |         0 |        0 |       0 |          0 | statement   | 
+(2 rows)
+
+
+[API ERRORS]
+
+[COORDINATOR ERRORS]
+2026-11-12 14:11:28,283 level=ERROR service=coordinator internal.queue.scheduled_event_poller scheduled event poller: cycle failed: Stream connection lost: BrokenPipeError(32, 'Broken pipe')
+2026-11-12 14:11:28,284 level=ERROR service=coordinator pika.adapters.blocking_connection BlockingConnection.close(200, 'Normal shutdown') called on closed connection.
+2026-11-12 14:11:28,658 level=ERROR service=coordinator pika.adapters.utils.io_services_utils _AsyncBaseTransport._produce() failed, aborting connection: error=BrokenPipeError(32, 'Broken pipe'); sock=<socket.socket fd=24, family=2, type=1, proto=6, laddr=('172.18.0.7', 54142)>; Caller's stack:
+2026-11-12 14:11:28,659 level=ERROR service=coordinator pika.adapters.base_connection connection_lost: StreamLostError: ("Stream connection lost: BrokenPipeError(32, 'Broken pipe')",)
+2026-11-12 14:11:28,659 level=ERROR service=coordinator pika.adapters.blocking_connection Unexpected connection close detected: StreamLostError: ("Stream connection lost: BrokenPipeError(32, 'Broken pipe')",)
+2026-11-12 14:11:28,659 level=WARNING service=coordinator internal.queue.outbox_relay outbox relay: broker connection failed id=39: Stream connection lost: BrokenPipeError(32, 'Broken pipe')
+2026-11-12 14:11:28,660 level=ERROR service=coordinator internal.queue.outbox_relay outbox relay: cycle failed: Stream connection lost: BrokenPipeError(32, 'Broken pipe')
+2026-11-12 14:11:28,660 level=ERROR service=coordinator pika.adapters.blocking_connection BlockingConnection.close(200, 'Normal shutdown') called on closed connection.
+2026-11-12 14:11:46,679 level=WARNING service=coordinator internal.queue.due_consumer due consumer transient error: connection already closed
+2026-11-12 14:11:47,146 level=ERROR service=coordinator internal.queue.outbox_relay outbox relay: cycle failed: connection already closed
+2026-11-12 14:11:48,166 level=ERROR service=coordinator internal.queue.outbox_relay outbox relay: cycle failed: connection already closed
+2026-11-12 14:11:48,560 level=ERROR service=coordinator internal.queue.reconciliation reconciliation: server closed the connection unexpectedly
+2026-11-12 14:11:48,561 level=ERROR service=coordinator pika.adapters.utils.io_services_utils Socket EOF; <socket.socket fd=32, family=2, type=1, proto=6, laddr=('172.18.0.7', 54168)>
+2026-11-12 14:11:48,561 level=ERROR service=coordinator pika.adapters.base_connection Transport indicated EOF.
+2026-11-12 14:11:48,562 level=ERROR service=coordinator pika.adapters.base_connection connection_lost: StreamLostError: ('Transport indicated EOF',)
+2026-11-12 14:11:48,562 level=ERROR service=coordinator pika.adapters.blocking_connection Unexpected connection close detected: StreamLostError: ('Transport indicated EOF',)
+2026-11-12 14:11:49,186 level=ERROR service=coordinator internal.queue.outbox_relay outbox relay: cycle failed: connection already closed
+2026-11-12 14:11:49,743 level=WARNING service=coordinator internal.queue.due_consumer due consumer transient error: connection already closed
+2026-11-12 14:11:50,210 level=ERROR service=coordinator internal.queue.outbox_relay outbox relay: cycle failed: connection already closed
+2026-11-12 14:11:51,230 level=ERROR service=coordinator internal.queue.outbox_relay outbox relay: cycle failed: connection already closed
+
+[WORKER1 ERRORS]
+2026-11-12 14:11:49,762 level=ERROR service=worker worker_id=node1-worker-1 worker slot node1-worker-1-2 consumer failed: connection already closed
+2026-11-12 14:11:49,786 level=ERROR service=worker worker_id=node1-worker-1 worker slot node1-worker-1-1 consumer failed: connection already closed
+2026-11-12 14:11:50,852 level=ERROR service=worker worker_id=node1-worker-1 worker slot node1-worker-1-2 consumer failed: connection already closed
+2026-11-12 14:11:50,883 level=ERROR service=worker worker_id=node1-worker-1 worker slot node1-worker-1-1 consumer failed: connection already closed

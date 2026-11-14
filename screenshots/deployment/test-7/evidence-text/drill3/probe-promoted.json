@@ -1,0 +1,331 @@
+{
+  "summary": {
+    "phase": "promoted",
+    "attempts": 30,
+    "interval_seconds": 0.1,
+    "status_counts": {
+      "201": 4,
+      "429": 26
+    },
+    "allowed_2xx": 4,
+    "denied_429": 26,
+    "server_5xx": 0,
+    "network_errors": 0,
+    "sources": [
+      "local"
+    ],
+    "policies": [
+      "global:ingress",
+      "user:tasks"
+    ],
+    "latency_ms": {
+      "p50": 2.338,
+      "max": 13.642
+    },
+    "retry_after_samples": [
+      "1"
+    ]
+  },
+  "records": [
+    {
+      "i": 0,
+      "status": 201,
+      "latency_ms": 11.375,
+      "source": "local",
+      "policy": "user:tasks",
+      "remaining": "9",
+      "retry_after": null,
+      "error": null
+    },
+    {
+      "i": 1,
+      "status": 429,
+      "latency_ms": 2.854,
+      "source": "local",
+      "policy": "global:ingress",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":688}"
+    },
+    {
+      "i": 2,
+      "status": 429,
+      "latency_ms": 2.127,
+      "source": "local",
+      "policy": "global:ingress",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":585}"
+    },
+    {
+      "i": 3,
+      "status": 429,
+      "latency_ms": 2.119,
+      "source": "local",
+      "policy": "global:ingress",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":483}"
+    },
+    {
+      "i": 4,
+      "status": 429,
+      "latency_ms": 3.091,
+      "source": "local",
+      "policy": "global:ingress",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":379}"
+    },
+    {
+      "i": 5,
+      "status": 429,
+      "latency_ms": 2.956,
+      "source": "local",
+      "policy": "global:ingress",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":276}"
+    },
+    {
+      "i": 6,
+      "status": 429,
+      "latency_ms": 8.167,
+      "source": "local",
+      "policy": "global:ingress",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":171}"
+    },
+    {
+      "i": 7,
+      "status": 429,
+      "latency_ms": 3.249,
+      "source": "local",
+      "policy": "global:ingress",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":64}"
+    },
+    {
+      "i": 8,
+      "status": 201,
+      "latency_ms": 13.642,
+      "source": "local",
+      "policy": "user:tasks",
+      "remaining": "8",
+      "retry_after": null,
+      "error": null
+    },
+    {
+      "i": 9,
+      "status": 429,
+      "latency_ms": 2.141,
+      "source": "local",
+      "policy": "global:ingress",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":687}"
+    },
+    {
+      "i": 10,
+      "status": 429,
+      "latency_ms": 2.983,
+      "source": "local",
+      "policy": "global:ingress",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":584}"
+    },
+    {
+      "i": 11,
+      "status": 429,
+      "latency_ms": 2.434,
+      "source": "local",
+      "policy": "global:ingress",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":481}"
+    },
+    {
+      "i": 12,
+      "status": 429,
+      "latency_ms": 2.043,
+      "source": "local",
+      "policy": "global:ingress",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":378}"
+    },
+    {
+      "i": 13,
+      "status": 429,
+      "latency_ms": 2.09,
+      "source": "local",
+      "policy": "global:ingress",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":276}"
+    },
+    {
+      "i": 14,
+      "status": 429,
+      "latency_ms": 2.141,
+      "source": "local",
+      "policy": "global:ingress",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":173}"
+    },
+    {
+      "i": 15,
+      "status": 429,
+      "latency_ms": 2.277,
+      "source": "local",
+      "policy": "global:ingress",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":71}"
+    },
+    {
+      "i": 16,
+      "status": 201,
+      "latency_ms": 12.223,
+      "source": "local",
+      "policy": "user:tasks",
+      "remaining": "8",
+      "retry_after": null,
+      "error": null
+    },
+    {
+      "i": 17,
+      "status": 429,
+      "latency_ms": 2.197,
+      "source": "local",
+      "policy": "global:ingress",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":687}"
+    },
+    {
+      "i": 18,
+      "status": 429,
+      "latency_ms": 1.909,
+      "source": "local",
+      "policy": "global:ingress",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":585}"
+    },
+    {
+      "i": 19,
+      "status": 429,
+      "latency_ms": 2.158,
+      "source": "local",
+      "policy": "global:ingress",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":483}"
+    },
+    {
+      "i": 20,
+      "status": 429,
+      "latency_ms": 1.966,
+      "source": "local",
+      "policy": "global:ingress",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":380}"
+    },
+    {
+      "i": 21,
+      "status": 429,
+      "latency_ms": 2.232,
+      "source": "local",
+      "policy": "global:ingress",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":278}"
+    },
+    {
+      "i": 22,
+      "status": 429,
+      "latency_ms": 2.22,
+      "source": "local",
+      "policy": "global:ingress",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":175}"
+    },
+    {
+      "i": 23,
+      "status": 429,
+      "latency_ms": 2.158,
+      "source": "local",
+      "policy": "global:ingress",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":73}"
+    },
+    {
+      "i": 24,
+      "status": 201,
+      "latency_ms": 12.446,
+      "source": "local",
+      "policy": "user:tasks",
+      "remaining": "8",
+      "retry_after": null,
+      "error": null
+    },
+    {
+      "i": 25,
+      "status": 429,
+      "latency_ms": 1.877,
+      "source": "local",
+      "policy": "global:ingress",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":687}"
+    },
+    {
+      "i": 26,
+      "status": 429,
+      "latency_ms": 2.717,
+      "source": "local",
+      "policy": "global:ingress",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":585}"
+    },
+    {
+      "i": 27,
+      "status": 429,
+      "latency_ms": 2.899,
+      "source": "local",
+      "policy": "global:ingress",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":482}"
+    },
+    {
+      "i": 28,
+      "status": 429,
+      "latency_ms": 2.398,
+      "source": "local",
+      "policy": "global:ingress",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":379}"
+    },
+    {
+      "i": 29,
+      "status": 429,
+      "latency_ms": 2.409,
+      "source": "local",
+      "policy": "global:ingress",
+      "remaining": "0",
+      "retry_after": "1",
+      "error": "{\"error\":\"Too many requests\",\"retryAfterMs\":276}"
+    }
+  ]
+}

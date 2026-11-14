@@ -1,0 +1,73 @@
+[
+  {
+    "ts": "2026-11-12T14:33:08Z",
+    "master_role": "role:master",
+    "slaves": [
+      "slave0:ip=172.31.5.27,port=6379,state=online,offset=21454305,lag=0"
+    ]
+  },
+  {
+    "ts": "2026-11-12T14:33:09Z",
+    "master_role": "role:master",
+    "slaves": [
+      "slave0:ip=172.31.5.27,port=6379,state=online,offset=21467197,lag=0"
+    ]
+  },
+  {
+    "ts": "2026-11-12T14:33:10Z",
+    "master_role": "role:master",
+    "slaves": [
+      "slave0:ip=172.31.5.27,port=6379,state=online,offset=21467335,lag=0"
+    ]
+  },
+  {
+    "ts": "2026-11-12T14:33:12Z",
+    "master_role": "role:master",
+    "slaves": [
+      "slave0:ip=172.31.5.27,port=6379,state=online,offset=21467828,lag=0"
+    ]
+  },
+  {
+    "ts": "2026-11-12T14:33:13Z",
+    "master_role": "role:master",
+    "slaves": [
+      "slave0:ip=172.31.5.27,port=6379,state=online,offset=21468105,lag=0"
+    ]
+  },
+  {
+    "ts": "2026-11-12T14:33:14Z",
+    "master_role": "role:master",
+    "slaves": [
+      "slave0:ip=172.31.5.27,port=6379,state=online,offset=21468243,lag=0"
+    ]
+  },
+  {
+    "ts": "2026-11-12T14:33:15Z",
+    "master_role": "role:master",
+    "slaves": [
+      "slave0:ip=172.31.5.27,port=6379,state=online,offset=21468520,lag=0"
+    ]
+  },
+  {
+    "ts": "2026-11-12T14:33:17Z",
+    "master_role": "role:master",
+    "slaves": [
+      "slave0:ip=172.31.5.27,port=6379,state=online,offset=21468658,lag=0"
+    ]
+  },
+  {
+    "ts": "2026-11-12T14:33:18Z",
+    "master_role": "role:master",
+    "slaves": [
+      "slave0:ip=172.31.5.27,port=6379,state=online,offset=21469087,lag=0"
+    ]
+  },
+  {
+    "ts": "2026-11-12T14:33:19Z",
+    "master_role": "role:master",
+    "slaves": [
+      "slave0:ip=172.31.5.27,port=6379,state=online,offset=21469364,lag=0",
+      "slave1:ip=172.31.40.27,port=6379,state=wait_bgsave,offset=0,lag=0"
+    ]
+  }
+]

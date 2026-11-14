@@ -1,0 +1,13 @@
+=== before fix: coordinator crash loop (first occurrence) ===
+2026-11-11 10:05:59,704 level=CRITICAL service=coordinator __main__ db: connection to server at "host.docker.internal" (172.17.0.1), port 6432 failed: FATAL:  unsupported startup parameter in options: statement_timeout
+2026-11-11 10:06:00,673 level=CRITICAL service=coordinator __main__ db: connection to server at "host.docker.internal" (172.17.0.1), port 6432 failed: FATAL:  unsupported startup parameter in options: statement_timeout
+=== pgbouncer setting now ===
+ignore_startup_parameters = extra_float_digits,options
+=== coordinator status now ===
+Up About a minute
+=== coordinator startup now ===
+2026-11-11 10:11:49,666 level=INFO service=coordinator pika.adapters.utils.io_services_utils Socket connected: <socket.socket fd=33, family=2, type=1, proto=6, laddr=('172.18.0.7', 54152), raddr=('172.17.0.1', 5673)>
+2026-11-11 10:11:49,667 level=INFO service=coordinator pika.adapters.utils.io_services_utils Socket connected: <socket.socket fd=30, family=2, type=1, proto=6, laddr=('172.18.0.7', 54172), raddr=('172.17.0.1', 5673)>
+2026-11-11 10:11:49,669 level=INFO service=coordinator pika.adapters.utils.io_services_utils Socket connected: <socket.socket fd=32, family=2, type=1, proto=6, laddr=('172.18.0.7', 54168), raddr=('172.17.0.1', 5673)>
+2026-11-11 10:11:49,692 level=INFO service=coordinator internal.queue.due_consumer consuming scheduler.due
+

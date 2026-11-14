@@ -1,0 +1,9 @@
+queue_drained_ts=2026-11-12T14:21:32Z
+Timeout: 60.0 seconds ...
+Listing queues for vhost / ...
+name	leader	messages	messages_ready	messages_unacknowledged
+scheduler.results	rabbit@node1	0	0	0
+scheduler.due	rabbit@node1	0	0	0
+scheduler.tasks	rabbit@node1	0	0	0
+scheduler.tasks.dlq	rabbit@node2	0	0	0
+

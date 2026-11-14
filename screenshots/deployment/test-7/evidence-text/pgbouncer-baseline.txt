@@ -1,0 +1,31 @@
+===== PGBOUNCER CONFIG =====
+ auth_file                   | /etc/pgbouncer/userlist.txt                                                                                                    |                                                                                                                                | yes
+ auth_type                   | scram-sha-256                                                                                                                  | md5                                                                                                                            | yes
+ default_pool_size           | 40                                                                                                                             | 20                                                                                                                             | yes
+ listen_port                 | 6432                                                                                                                           | 6432                                                                                                                           | no
+ max_client_conn             | 1000                                                                                                                           | 100                                                                                                                            | yes
+ pool_mode                   | transaction                                                                                                                    | session                                                                                                                        | yes
+ server_reset_query          | DISCARD ALL                                                                                                                    | DISCARD ALL                                                                                                                    | yes
+ server_reset_query_always   | 1                                                                                                                              | 0                                                                                                                              | yes
+===== PGBOUNCER POOLS =====
+       database        |   user    | cl_active | cl_waiting | cl_active_cancel_req | cl_waiting_cancel_req | sv_active | sv_active_cancel | sv_being_canceled | sv_idle | sv_used | sv_tested | sv_login | maxwait | maxwait_us |  pool_mode  | load_balance_hosts 
+-----------------------+-----------+-----------+------------+----------------------+-----------------------+-----------+------------------+-------------------+---------+---------+-----------+----------+---------+------------+-------------+--------------------
+ distributed_scheduler | scheduler |         4 |          0 |                    0 |                     0 |         0 |                0 |                 0 |       1 |       4 |         0 |        0 |       0 |          0 | transaction | 
+ pgbouncer             | pgbouncer |         1 |          0 |                    0 |                     0 |         0 |                0 |                 0 |       0 |       0 |         0 |        0 |       0 |          0 | statement   | 
+(2 rows)
+
+===== PGBOUNCER DATABASES =====
+         name          |   host    | port |       database        | force_user | pool_size | min_pool_size | reserve_pool_size | server_lifetime | pool_mode | load_balance_hosts | max_connections | current_connections | max_client_connections | current_client_connections | paused | disabled 
+-----------------------+-----------+------+-----------------------+------------+-----------+---------------+-------------------+-----------------+-----------+--------------------+-----------------+---------------------+------------------------+----------------------------+--------+----------
+ distributed_scheduler | 127.0.0.1 | 5433 | distributed_scheduler |            |        40 |             5 |                10 |            3600 |           |                    |              80 |                   5 |                      0 |                          4 |      0 |        0
+ pgbouncer             |           | 6432 | pgbouncer             | pgbouncer  |         2 |             0 |                 0 |            3600 | statement |                    |              80 |                   0 |                      0 |                          1 |      0 |        0
+(2 rows)
+
+===== ADVISORY LOCK THROUGH POOLER =====
+BEGIN
+first_txn_lock=true
+COMMIT
+BEGIN
+second_txn_lock=true
+COMMIT
+

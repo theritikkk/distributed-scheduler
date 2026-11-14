@@ -1,0 +1,26 @@
+run_id=drill4-20261112T143537Z
+2026-11-12T14:35:37Z
+leader=200 (node2 primary probe)
+--- nginx upstream config ---
+--- nginx local health 8081 ---
+ok
+ HTTP 200
+--- api readiness 8081 (proxied) ---
+{"status":"ready","service":"api-gateway"} HTTP 200
+--- per-node api-haproxy 8080 ---
+172.31.40.27:8080 -> 200
+172.31.5.27:8080 -> 200
+172.31.20.4:8080 -> 200
+--- haproxy api backend on node1 ---
+api_back,node1,UP,1,1
+api_back,node2,UP,1,1
+api_back,node3,UP,1,1
+api_back,BACKEND,UP,3,3
+--- pre counts ---
+tasks=1036
+executions=925
+outbox_pending=0
+outbox_failed=0
+timers_pending=111
+timers_failed=0
+loadgen_start_epoch=1794494137

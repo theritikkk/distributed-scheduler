@@ -1,0 +1,113 @@
+{
+  "allowed_cidr": {
+    "sensitive": false,
+    "type": "string",
+    "value": "103.233.119.122/32"
+  },
+  "api_url": {
+    "sensitive": false,
+    "type": "string",
+    "value": "http://13.207.2.119:8080"
+  },
+  "api_urls": {
+    "sensitive": false,
+    "type": [
+      "object",
+      {
+        "node1": "string",
+        "node2": "string",
+        "node3": "string"
+      }
+    ],
+    "value": {
+      "node1": "http://13.207.2.119:8080",
+      "node2": "http://15.206.211.232:8080",
+      "node3": "http://65.0.118.42:8080"
+    }
+  },
+  "artifact_bucket": {
+    "sensitive": false,
+    "type": "string",
+    "value": "scheduler-ha-lab-artifacts-bc39e827"
+  },
+  "node_availability_zones": {
+    "sensitive": false,
+    "type": [
+      "object",
+      {
+        "node1": "string",
+        "node2": "string",
+        "node3": "string"
+      }
+    ],
+    "value": {
+      "node1": "ap-south-1a",
+      "node2": "ap-south-1b",
+      "node3": "ap-south-1c"
+    }
+  },
+  "node_ids": {
+    "sensitive": false,
+    "type": [
+      "object",
+      {
+        "node1": "string",
+        "node2": "string",
+        "node3": "string"
+      }
+    ],
+    "value": {
+      "node1": "i-04edb2bde1c4c2371",
+      "node2": "i-0971d5c38b4cff21e",
+      "node3": "i-0768416dc03bcd66d"
+    }
+  },
+  "node_private_ips": {
+    "sensitive": false,
+    "type": [
+      "object",
+      {
+        "node1": "string",
+        "node2": "string",
+        "node3": "string"
+      }
+    ],
+    "value": {
+      "node1": "172.31.40.27",
+      "node2": "172.31.5.27",
+      "node3": "172.31.20.4"
+    }
+  },
+  "node_public_ips": {
+    "sensitive": false,
+    "type": [
+      "object",
+      {
+        "node1": "string",
+        "node2": "string",
+        "node3": "string"
+      }
+    ],
+    "value": {
+      "node1": "13.207.2.119",
+      "node2": "15.206.211.232",
+      "node3": "65.0.118.42"
+    }
+  },
+  "ssm_commands": {
+    "sensitive": false,
+    "type": [
+      "object",
+      {
+        "node1": "string",
+        "node2": "string",
+        "node3": "string"
+      }
+    ],
+    "value": {
+      "node1": "aws ssm start-session --target i-04edb2bde1c4c2371 --region ap-south-1",
+      "node2": "aws ssm start-session --target i-0971d5c38b4cff21e --region ap-south-1",
+      "node3": "aws ssm start-session --target i-0768416dc03bcd66d --region ap-south-1"
+    }
+  }
+}

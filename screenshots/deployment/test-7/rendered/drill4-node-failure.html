@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Drill 4 - API node and HAProxy node failure through nginx</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 28px 32px; background: #0b1020; color: #d6e2f0;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+  header { border-bottom: 1px solid #22304a; padding-bottom: 14px; margin-bottom: 18px; }
+  h1 { font-size: 20px; margin: 0 0 6px; color: #ffffff; letter-spacing: .2px; }
+  .sub { color: #8fa6c4; font-size: 12.5px; }
+  .badge {
+    display: inline-block; margin-top: 10px; padding: 3px 9px; border-radius: 999px;
+    background: #12233b; border: 1px solid #294a72; color: #8cc8ff; font-size: 11.5px;
+  }
+  pre {
+    margin: 0; padding: 18px 20px; background: #070b14; border: 1px solid #1d2a40;
+    border-radius: 10px; font-size: 12.2px; line-height: 1.52; white-space: pre-wrap;
+    word-break: break-word; overflow-wrap: anywhere;
+  }
+  footer { margin-top: 14px; color: #61748e; font-size: 11.5px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Drill 4 - API node and HAProxy node failure through nginx</h1>
+  <div class="sub">717/720 accepted, all 717 completed exactly once; 3 client failures during node recovery</div>
+  <div class="badge">AWS HA lab &middot; ap-south-1 &middot; captured 2026-11-12 14:49:13Z</div>
+</header>
+<pre>DRILL 4 - API NODE AND HAPROXY NODE FAILURE THROUGH NGINX
+Traffic: 720 requests over 180 s through node1 nginx :8081
+Injection A: stop node2 api-gateway at ~35 s (restore at ~80 s)
+Injection B: stop node3 HAProxy at ~75 s (restore at ~130 s)
+
+--- submission summary ---
+{
+  &quot;run_id&quot;: &quot;drill4-20261112T143537Z&quot;,
+  &quot;mode&quot;: &quot;stream&quot;,
+  &quot;base&quot;: &quot;http://127.0.0.1:8081&quot;,
+  &quot;prefix&quot;: &quot;drill4-20261112T143537Z&quot;,
+  &quot;started_at&quot;: &quot;2026-11-12T14:35:37.715856Z&quot;,
+  &quot;ended_at&quot;: &quot;2026-11-12T14:38:37.464108Z&quot;,
+  &quot;attempts&quot;: 720,
+  &quot;created&quot;: 717,
+  &quot;failed&quot;: 3,
+  &quot;success_rate&quot;: 99.58,
+  &quot;latency_ms&quot;: {
+    &quot;p50&quot;: 11.955,
+    &quot;p95&quot;: 15.735,
+    &quot;p99&quot;: 22.557,
+    &quot;max&quot;: 15014.998
+  },
+  &quot;max_gap_ms&quot;: 15247.943,
+  &quot;error_samples&quot;: [
+    &quot;timed out&quot;,
+    &quot;&lt;html&gt;\r\n&lt;head&gt;&lt;title&gt;502 Bad Gateway&lt;/title&gt;&lt;/head&gt;\r\n&lt;body&gt;\r\n&lt;center&gt;&lt;h1&gt;502 Bad Gateway&lt;/h1&gt;&lt;/center&gt;\r\n&lt;hr&gt;&lt;center&gt;nginx&lt;/center&gt;\r\n&lt;/body&gt;\r\n&lt;/html&gt;\r\n&quot;,
+    &quot;&lt;html&gt;\r\n&lt;head&gt;&lt;title&gt;502 Bad Gateway&lt;/title&gt;&lt;/head&gt;\r\n&lt;body&gt;\r\n&lt;center&gt;&lt;h1&gt;502 Bad Gateway&lt;/h1&gt;&lt;/center&gt;\r\n&lt;hr&gt;&lt;center&gt;nginx&lt;/center&gt;\r\n&lt;/body&gt;\r\n&lt;/html&gt;\r\n&quot;
+  ]
+}
+
+
+--- node2 API controller ---
+node2 api-gateway stopped 2026-11-12T14:36:15Z, restarted 14:37:00Z,
+health 200 at 14:37:03Z. During the stop: local :3000 health = 000.
+
+--- node3 HAProxy controller ---
+node3 haproxy stopped 2026-11-12T14:36:55Z, container exited at ~14:37:05Z,
+restarted 14:37:50Z, health 200 at 14:37:52Z. During the stop: local :8080 = 000.
+
+--- nginx retry/error log ---
+2026/11/12 14:37:05 [error] 30#30: *1432 connect() failed (111: Connection refused) while connecting to upstream, client: 127.0.0.1, server: _, request: &quot;POST /api/v1/tasks HTTP/1.1&quot;, upstream: &quot;http://172.31.20.4:8080/api/v1/tasks&quot;, host: &quot;127.0.0.1:8081&quot;
+2026/11/12 14:37:06 [error] 29#29: *1435 connect() failed (111: Connection refused) while connecting to upstream, client: 127.0.0.1, server: _, request: &quot;GET /health/ready HTTP/1.1&quot;, upstream: &quot;http://172.31.20.4:8080/health/ready&quot;, host: &quot;127.0.0.1:8081&quot;
+2026/11/12 14:37:10 [error] 29#29: *1441 connect() failed (111: Connection refused) while connecting to upstream, client: 127.0.0.1, server: _, request: &quot;GET /health/ready HTTP/1.1&quot;, upstream: &quot;http://172.31.20.4:8080/health/ready&quot;, host: &quot;127.0.0.1:8081&quot;
+2026/11/12 14:37:10 [warn] 29#29: *1441 upstream server temporarily disabled while connecting to upstream, client: 127.0.0.1, server: _, request: &quot;GET /health/ready HTTP/1.1&quot;, upstream: &quot;http://172.31.20.4:8080/health/ready&quot;, host: &quot;127.0.0.1:8081&quot;
+2026/11/12 14:37:20 [error] 30#30: *1454 upstream prematurely closed connection while reading response header from upstream, client: 127.0.0.1, server: _, request: &quot;POST /api/v1/tasks HTTP/1.1&quot;, upstream: &quot;http://172.31.5.27:8080/api/v1/tasks&quot;, host: &quot;127.0.0.1:8081&quot;
+2026/11/12 14:37:21 [error] 30#30: *1459 connect() failed (111: Connection refused) while connecting to upstream, client: 127.0.0.1, server: _, request: &quot;GET /health/ready HTTP/1.1&quot;, upstream: &quot;http://172.31.20.4:8080/health/ready&quot;, host: &quot;127.0.0.1:8081&quot;
+2026/11/12 14:37:21 [warn] 30#30: *1459 upstream server temporarily disabled while connecting to upstream, client: 127.0.0.1, server: _, request: &quot;GET /health/ready HTTP/1.1&quot;, upstream: &quot;http://172.31.20.4:8080/health/ready&quot;, host: &quot;127.0.0.1:8081&quot;
+2026/11/12 14:37:21 [error] 30#30: *1456 upstream prematurely closed connection while reading response header from upstream, client: 127.0.0.1, server: _, request: &quot;POST /api/v1/tasks HTTP/1.1&quot;, upstream: &quot;http://172.31.40.27:8080/api/v1/tasks&quot;, host: &quot;127.0.0.1:8081&quot;
+2026/11/12 14:37:21 [error] 29#29: *1477 connect() failed (111: Connection refused) while connecting to upstream, client: 127.0.0.1, server: _, request: &quot;POST /api/v1/tasks HTTP/1.1&quot;, upstream: &quot;http://172.31.20.4:8080/api/v1/tasks&quot;, host: &quot;127.0.0.1:8081&quot;
+2026/11/12 14:37:21 [warn] 29#29: *1477 upstream server temporarily disabled while connecting to upstream, client: 127.0.0.1, server: _, request: &quot;POST /api/v1/tasks HTTP/1.1&quot;, upstream: &quot;http://172.31.20.4:8080/api/v1/tasks&quot;, host: &quot;127.0.0.1:8081&quot;
+2026/11/12 14:37:32 [error] 29#29: *1578 connect() failed (111: Connection refused) while connecting to upstream, client: 127.0.0.1, server: _, request: &quot;POST /api/v1/tasks HTTP/1.1&quot;, upstream: &quot;http://172.31.20.4:8080/api/v1/tasks&quot;, host: &quot;127.0.0.1:8081&quot;
+2026/11/12 14:37:32 [warn] 29#29: *1578 upstream server temporarily disabled while connecting to upstream, client: 127.0.0.1, server: _, request: &quot;POST /api/v1/tasks HTTP/1.1&quot;, upstream: &quot;http://172.31.20.4:8080/api/v1/tasks&quot;, host: &quot;127.0.0.1:8081&quot;
+2026/11/12 14:37:34 [error] 30#30: *1590 connect() failed (111: Connection refused) while connecting to upstream, client: 127.0.0.1, server: _, request: &quot;POST /api/v1/tasks HTTP/1.1&quot;, upstream: &quot;http://172.31.20.4:8080/api/v1/tasks&quot;, host: &quot;127.0.0.1:8081&quot;
+2026/11/12 14:37:34 [warn] 30#30: *1590 upstream server temporarily disabled while connecting to upstream, client: 127.0.0.1, server: _, request: &quot;POST /api/v1/tasks HTTP/1.1&quot;, upstream: &quot;http://172.31.20.4:8080/api/v1/tasks&quot;, host: &quot;127.0.0.1:8081&quot;
+2026/11/12 14:37:44 [error] 29#29: *1641 connect() failed (111: Connection refused) while connecting to upstream, client: 127.0.0.1, server: _, request: &quot;POST /api/v1/tasks HTTP/1.1&quot;, upstream: &quot;http://172.31.20.4:8080/api/v1/tasks&quot;, host: &quot;127.0.0.1:8081&quot;
+2026/11/12 14:37:44 [warn] 29#29: *1641 upstream server temporarily disabled while connecting to upstream, client: 127.0.0.1, server: _, request: &quot;POST /api/v1/tasks HTTP/1.1&quot;, upstream: &quot;http://172.31.20.4:8080/api/v1/tasks&quot;, host: &quot;127.0.0.1:8081&quot;
+2026/11/12 14:37:48 [error] 30#30: *1657 connect() failed (111: Connection refused) while connecting to upstream, client: 127.0.0.1, server: _, request: &quot;POST /api/v1/tasks HTTP/1.1&quot;, upstream: &quot;http://172.31.20.4:8080/api/v1/tasks&quot;, host: &quot;127.0.0.1:8081&quot;
+2026/11/12 14:37:48 [warn] 30#30: *1657 upstream server temporarily disabled while connecting to upstream, client: 127.0.0.1, server: _, request: &quot;POST /api/v1/tasks HTTP/1.1&quot;, upstream: &quot;http://172.31.20.4:8080/api/v1/tasks&quot;, host: &quot;127.0.0.1:8081&quot;
+
+
+--- final integrity ---
+run_id=drill4-20261112T143537Z
+2026-11-12T14:38:45Z
+--- per-node api-haproxy 8080 ---
+172.31.40.27:8080 -&gt; 200
+172.31.5.27:8080 -&gt; 200
+172.31.20.4:8080 -&gt; 200
+--- tasks by status ---
+completed|717
+--- executions for run ---
+717
+--- duplicate active executions ---
+0
+--- duplicate slots ---
+0
+--- outbox for run ---
+published|2151
+--- global tasks / executions ---
+tasks=1753
+executions=1642
+--- haproxy api backend on node1 ---
+api_back,node1,UP,1,1
+api_back,node2,UP,1,1
+api_back,node3,UP,1,1
+api_back,BACKEND,UP,3,3
+</pre>
+<footer>Source: live three-node HA lab. Output shown verbatim from the captured command.</footer>
+</body>
+</html>

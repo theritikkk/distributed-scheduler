@@ -1,0 +1,8 @@
+{"ts": "2026-11-12T14:32:09Z", "elapsed": 0.01, "sentinel_master": "172.31.40.27:6379", "proxy_ping": "Error: Connection reset by peer", "master_ping": "Could not connect to Redis at 172.31.40.27:6379: Connection refused"}
+{"ts": "2026-11-12T14:32:10Z", "elapsed": 1.02, "sentinel_master": "172.31.40.27:6379", "proxy_ping": "Error: Server closed the connection", "master_ping": "Could not connect to Redis at 172.31.40.27:6379: Connection refused"}
+{"ts": "2026-11-12T14:32:11Z", "elapsed": 1.96, "sentinel_master": "172.31.40.27:6379", "proxy_ping": "Error: Connection reset by peer", "master_ping": "Could not connect to Redis at 172.31.40.27:6379: Connection refused"}
+{"ts": "2026-11-12T14:32:12Z", "elapsed": 2.96, "sentinel_master": "172.31.40.27:6379", "proxy_ping": "Error: Connection reset by peer", "master_ping": "Could not connect to Redis at 172.31.40.27:6379: Connection refused"}
+{"ts": "2026-11-12T14:32:13Z", "elapsed": 3.9, "sentinel_master": "172.31.40.27:6379", "proxy_ping": "Error: Connection reset by peer", "master_ping": "Could not connect to Redis at 172.31.40.27:6379: Connection refused"}
+{"ts": "2026-11-12T14:32:14Z", "elapsed": 4.91, "sentinel_master": "172.31.40.27:6379", "proxy_ping": "Error: Connection reset by peer", "master_ping": "Could not connect to Redis at 172.31.40.27:6379: Connection refused"}
+{"ts": "2026-11-12T14:32:15Z", "elapsed": 5.95, "sentinel_master": "172.31.20.4:6379", "proxy_ping": "Error: Connection reset by peer", "master_ping": "PONG"}
+{"ts": "2026-11-12T14:32:16Z", "elapsed": 6.96, "sentinel_master": "172.31.20.4:6379", "proxy_ping": "PONG", "master_ping": "PONG"}

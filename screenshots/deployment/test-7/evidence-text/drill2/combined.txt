@@ -1,0 +1,213 @@
+DRILL 2 - RABBITMQ QUEUE-LEADER LOSS WITH 200-MESSAGE BACKLOG
+Injection: pause all 9 workers, submit 200 tasks, stop RabbitMQ app on node2
+
+--- pre-state ---
+run_id=drill2-20261112T141904Z
+2026-11-12T14:19:04Z
+backlog_queue_before:
+Timeout: 60.0 seconds ...
+Listing queues for vhost / ...
+name	type	leader	members	messages
+scheduler.due	quorum	rabbit@node1	[rabbit@node1, rabbit@node3, rabbit@node2]	0
+scheduler.tasks.dlq	quorum	rabbit@node3	[rabbit@node3, rabbit@node2, rabbit@node1]	0
+scheduler.results	quorum	rabbit@node2	[rabbit@node2, rabbit@node3, rabbit@node1]	0
+scheduler.tasks	quorum	rabbit@node2	[rabbit@node2, rabbit@node3, rabbit@node1]	0
+patroni:
++ Cluster: scheduler (7706851908036096019) --------+----+-----------+
+| Member | Host         | Role         | State     | TL | Lag in MB |
++--------+--------------+--------------+-----------+----+-----------+
+| node1  | 172.31.40.27 | Sync Standby | streaming |  2 |         0 |
+| node2  | 172.31.5.27  | Leader       | running   |  2 |           |
+| node3  | 172.31.20.4  | Replica      | streaming |  2 |         0 |
++--------+--------------+--------------+-----------+----+-----------+
+baseline_tasks=725
+baseline_executions=725
+
+
+--- backlog before the injection ---
+backlog_ready=200 at_epoch=1794493152
+Timeout: 60.0 seconds ...
+Listing queues for vhost / ...
+name	leader	messages	messages_ready	messages_unacknowledged
+scheduler.due	rabbit@node1	0	0	0
+scheduler.results	rabbit@node2	0	0	0
+scheduler.tasks	rabbit@node2	200	200	0
+scheduler.tasks.dlq	rabbit@node3	0	0	0
+
+
+--- broker controller (stop / leader election / restart) ---
+node2 rabbitmq leader-loss controller
+pre_queues:
+Timeout: 60.0 seconds ...
+Listing queues for vhost / ...
+name	leader	members	messages
+scheduler.results	rabbit@node2	[rabbit@node2, rabbit@node3, rabbit@node1]	0
+scheduler.tasks	rabbit@node2	[rabbit@node2, rabbit@node3, rabbit@node1]	200
+scheduler.due	rabbit@node1	[rabbit@node1, rabbit@node3, rabbit@node2]	0
+scheduler.tasks.dlq	rabbit@node3	[rabbit@node3, rabbit@node2, rabbit@node1]	0
+stop_epoch=1794493173
+stop_ts=2026-11-12T14:19:33Z
+Stopping rabbit application on node rabbit@node2 ...
+stop_returned_epoch=1794493175
+new_leader=rabbit@node1
+election_epoch=1794493175
+messages_ready=-1 messages_unacked=-1 members=3
+election_ts=2026-11-12T14:19:35Z
+restart_epoch=1794493203
+restart_ts=2026-11-12T14:20:03Z
+Starting node rabbit@node2 ...
+start_app_returned_epoch=1794493207
+status_ready_epoch=1794493208
+--- queues after restart ---
+Timeout: 60.0 seconds ...
+Listing queues for vhost / ...
+name	leader	members	messages	messages_ready	messages_unacknowledged
+scheduler.tasks.dlq	rabbit@node2	[rabbit@node3, rabbit@node2, rabbit@node1]	0	0	0
+scheduler.results	rabbit@node1	[rabbit@node2, rabbit@node3, rabbit@node1]	0	0	0
+scheduler.due	rabbit@node1	[rabbit@node1, rabbit@node3, rabbit@node2]	0	0	0
+scheduler.tasks	rabbit@node1	[rabbit@node2, rabbit@node3, rabbit@node1]	200	200	0
+--- cluster status ---
+Cluster status of node rabbit@node2 ...
+Basics
+
+Cluster name: rabbit@node2
+Total CPU cores available cluster-wide: 6
+
+Disk Nodes
+
+rabbit@node1
+rabbit@node2
+rabbit@node3
+
+Running Nodes
+
+rabbit@node1
+rabbit@node2
+rabbit@node3
+
+Versions
+
+rabbit@node2: RabbitMQ 3.13.7 on Erlang 26.2.5.16
+rabbit@node1: RabbitMQ 3.13.7 on Erlang 26.2.5.16
+rabbit@node3: RabbitMQ 3.13.7 on Erlang 26.2.5.16
+
+CPU Cores
+
+Node: rabbit@node2, available CPU cores: 2
+Node: rabbit@node1, available CPU cores: 2
+Node: rabbit@node3, available CPU cores: 2
+
+Maintenance status
+
+Node: rabbit@node2, status: not under maintenance
+Node: rabbit@node1, status: not under maintenance
+Node: rabbit@node3, status: not under maintenance
+
+Alarms
+
+(none)
+
+
+
+--- submission summary ---
+{
+  "run_id": "drill2-20261112T141904Z",
+  "mode": "burst",
+  "base": "http://127.0.0.1:8081",
+  "prefix": "drill2-20261112T141904Z",
+  "started_at": "2026-11-12T14:19:05.554182Z",
+  "ended_at": "2026-11-12T14:19:06.037883Z",
+  "attempts": 200,
+  "created": 200,
+  "failed": 0,
+  "success_rate": 100.0,
+  "latency_ms": {
+    "p50": 45.875,
+    "p95": 94.141,
+    "p99": 123.277,
+    "max": 129.681
+  },
+  "max_gap_ms": 19.732,
+  "error_samples": []
+}
+
+
+--- final integrity ---
+--- tasks by status ---
+completed|200
+--- executions ---
+200
+--- duplicate active ---
+0
+--- duplicate slots ---
+0
+--- outbox for run ---
+published|600
+--- queues final ---
+Timeout: 60.0 seconds ...
+Listing queues for vhost / ...
+name	leader	members	messages	messages_ready	messages_unacknowledged
+scheduler.results	rabbit@node1	[rabbit@node2, rabbit@node3, rabbit@node1]	21	18	3
+scheduler.due	rabbit@node1	[rabbit@node1, rabbit@node3, rabbit@node2]	0	0	0
+scheduler.tasks	rabbit@node1	[rabbit@node2, rabbit@node3, rabbit@node1]	137	129	8
+scheduler.tasks.dlq	rabbit@node2	[rabbit@node3, rabbit@node2, rabbit@node1]	0	0	0
+--- cluster ---
+Cluster status of node rabbit@node1 ...
+Basics
+
+Cluster name: rabbit@node1
+Total CPU cores available cluster-wide: 6
+
+Disk Nodes
+
+rabbit@node1
+rabbit@node2
+rabbit@node3
+
+Running Nodes
+
+rabbit@node1
+rabbit@node2
+rabbit@node3
+
+Versions
+
+rabbit@node1: RabbitMQ 3.13.7 on Erlang 26.2.5.16
+rabbit@node2: RabbitMQ 3.13.7 on Erlang 26.2.5.16
+rabbit@node3: RabbitMQ 3.13.7 on Erlang 26.2.5.16
+
+CPU Cores
+
+Node: rabbit@node1, available CPU cores: 2
+Node: rabbit@node2, available CPU cores: 2
+Node: rabbit@node3, available CPU cores: 2
+
+Maintenance status
+
+Node: rabbit@node1, status: not under maintenance
+Node: rabbit@node2, status: not under maintenance
+Node: rabbit@node3, status: not under maintenance
+
+Alarms
+
+(none)
+
+--- patroni ---
++ Cluster: scheduler (7706851908036096019) --------+----+-----------+
+| Member | Host         | Role         | State     | TL | Lag in MB |
++--------+--------------+--------------+-----------+----+-----------+
+| node1  | 172.31.40.27 | Sync Standby | streaming |  2 |         0 |
+| node2  | 172.31.5.27  | Leader       | running   |  2 |           |
+| node3  | 172.31.20.4  | Replica      | streaming |  2 |         0 |
++--------+--------------+--------------+-----------+----+-----------+
+
+
+--- queues after the drain ---
+queue_drained_ts=2026-11-12T14:21:32Z
+Timeout: 60.0 seconds ...
+Listing queues for vhost / ...
+name	leader	messages	messages_ready	messages_unacknowledged
+scheduler.results	rabbit@node1	0	0	0
+scheduler.due	rabbit@node1	0	0	0
+scheduler.tasks	rabbit@node1	0	0	0
+scheduler.tasks.dlq	rabbit@node2	0	0	0

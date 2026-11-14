@@ -1,0 +1,67 @@
+--- tasks by status ---
+completed|200
+--- executions ---
+200
+--- duplicate active ---
+0
+--- duplicate slots ---
+0
+--- outbox for run ---
+published|600
+--- queues final ---
+Timeout: 60.0 seconds ...
+Listing queues for vhost / ...
+name	leader	members	messages	messages_ready	messages_unacknowledged
+scheduler.results	rabbit@node1	[rabbit@node2, rabbit@node3, rabbit@node1]	21	18	3
+scheduler.due	rabbit@node1	[rabbit@node1, rabbit@node3, rabbit@node2]	0	0	0
+scheduler.tasks	rabbit@node1	[rabbit@node2, rabbit@node3, rabbit@node1]	137	129	8
+scheduler.tasks.dlq	rabbit@node2	[rabbit@node3, rabbit@node2, rabbit@node1]	0	0	0
+--- cluster ---
+Cluster status of node rabbit@node1 ...
+Basics
+
+Cluster name: rabbit@node1
+Total CPU cores available cluster-wide: 6
+
+Disk Nodes
+
+rabbit@node1
+rabbit@node2
+rabbit@node3
+
+Running Nodes
+
+rabbit@node1
+rabbit@node2
+rabbit@node3
+
+Versions
+
+rabbit@node1: RabbitMQ 3.13.7 on Erlang 26.2.5.16
+rabbit@node2: RabbitMQ 3.13.7 on Erlang 26.2.5.16
+rabbit@node3: RabbitMQ 3.13.7 on Erlang 26.2.5.16
+
+CPU Cores
+
+Node: rabbit@node1, available CPU cores: 2
+Node: rabbit@node2, available CPU cores: 2
+Node: rabbit@node3, available CPU cores: 2
+
+Maintenance status
+
+Node: rabbit@node1, status: not under maintenance
+Node: rabbit@node2, status: not under maintenance
+Node: rabbit@node3, status: not under maintenance
+
+Alarms
+
+(none)
+
+--- patroni ---
++ Cluster: scheduler (7706851908036096019) --------+----+-----------+
+| Member | Host         | Role         | State     | TL | Lag in MB |
++--------+--------------+--------------+-----------+----+-----------+
+| node1  | 172.31.40.27 | Sync Standby | streaming |  2 |         0 |
+| node2  | 172.31.5.27  | Leader       | running   |  2 |           |
+| node3  | 172.31.20.4  | Replica      | streaming |  2 |         0 |
++--------+--------------+--------------+-----------+----+-----------+

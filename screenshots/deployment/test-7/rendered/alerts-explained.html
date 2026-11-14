@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Prometheus alerts explained - pull-consumer false positives</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 28px 32px; background: #0b1020; color: #d6e2f0;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+  header { border-bottom: 1px solid #22304a; padding-bottom: 14px; margin-bottom: 18px; }
+  h1 { font-size: 20px; margin: 0 0 6px; color: #ffffff; letter-spacing: .2px; }
+  .sub { color: #8fa6c4; font-size: 12.5px; }
+  .badge {
+    display: inline-block; margin-top: 10px; padding: 3px 9px; border-radius: 999px;
+    background: #12233b; border: 1px solid #294a72; color: #8cc8ff; font-size: 11.5px;
+  }
+  pre {
+    margin: 0; padding: 18px 20px; background: #070b14; border: 1px solid #1d2a40;
+    border-radius: 10px; font-size: 12.2px; line-height: 1.52; white-space: pre-wrap;
+    word-break: break-word; overflow-wrap: anywhere;
+  }
+  footer { margin-top: 14px; color: #61748e; font-size: 11.5px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Prometheus alerts explained - pull-consumer false positives</h1>
+  <div class="sub">RabbitMQQueueConsumersMissing for scheduler.due and scheduler.results; coordinator uses basic_get pull loops</div>
+  <div class="badge">AWS HA lab &middot; ap-south-1 &middot; captured 2026-11-12 14:49:13Z</div>
+</header>
+<pre>PROMETHEUS ALERTS AT CAPTURE
+The two firing alerts are expected false positives in this lab.
+
+firing  RabbitMQQueueConsumersMissing  queue=scheduler.due  severity=critical  since=2026-11-11T10:06:27.583301485Z
+firing  RabbitMQQueueConsumersMissing  queue=scheduler.results  severity=critical  since=2026-11-12T14:19:57.583301485Z
+
+Why: the coordinator consumes scheduler.due and scheduler.results with
+channel.basic_get() pull loops, not basic_consume(). RabbitMQ therefore
+reports 0 consumers for those queues by design.
+  coordinator/internal/queue/due_consumer.py:381
+  coordinator/internal/queue/result_consumer.py:330
+
+RabbitMQ consumer counts (cluster-wide):
+=== RabbitMQ consumer counts (cluster-wide) ===
+Timeout: 60.0 seconds ...
+Listing queues for vhost / ...
+name	consumers
+scheduler.results	0
+scheduler.due	0
+scheduler.tasks	18
+scheduler.tasks.dlq	0
+
+=== Consumers by queue ===
+      1 queue_name
+     18 scheduler.tasks
+
+
+
+scheduler.tasks has 18 push consumers (9 workers x 2) and all 200-message,
+720-task and 717-task runs completed. Task flow is therefore healthy; the
+rule expression is too broad for pull-consumed queues.
+</pre>
+<footer>Source: live three-node HA lab. Output shown verbatim from the captured command.</footer>
+</body>
+</html>

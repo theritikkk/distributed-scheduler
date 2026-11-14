@@ -1,0 +1,20 @@
+{
+  "run_id": "drill2-20261112T141904Z",
+  "mode": "burst",
+  "base": "http://127.0.0.1:8081",
+  "prefix": "drill2-20261112T141904Z",
+  "started_at": "2026-11-12T14:19:05.554182Z",
+  "ended_at": "2026-11-12T14:19:06.037883Z",
+  "attempts": 200,
+  "created": 200,
+  "failed": 0,
+  "success_rate": 100.0,
+  "latency_ms": {
+    "p50": 45.875,
+    "p95": 94.141,
+    "p99": 123.277,
+    "max": 129.681
+  },
+  "max_gap_ms": 19.732,
+  "error_samples": []
+}
